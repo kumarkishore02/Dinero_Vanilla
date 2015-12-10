@@ -70,6 +70,10 @@
 #include <sys/types.h>
 #include <fcntl.h>
 //kishore
+//abhinava
+#include <sys/time.h>
+////abhinava
+
 
 /* some global variables */
 char *progname = "dineroIV";		/* for error messages */
@@ -1992,6 +1996,12 @@ main (int argc, char **argv)
         mmaped_trace = mmap (0, size, PROT_READ, 0, trace_file, 0);
 //kishore
 
+	//abhinava
+        struct timeval begin,end;
+      	double time_elapsed = 0.0f;
+	gettimeofday(&begin, NULL);	
+	//abhinava
+
 	printf ("\n---Simulation begins.\n");
 	tintcount = stat_interval;
 	flcount = flushcount;
@@ -2032,6 +2042,13 @@ done:
 	r.address = 0;
 	r.size = 0;
 	d4ref (cd, r);
+
+	//abhinava
+	gettimeofday(&end, NULL);
+	time_elapsed += (end.tv_sec - begin.tv_sec)*1000 + (end.tv_usec-begin.tv_usec)/1000 ;	
+	printf("---Simulation time: %f ms",time_elapsed);
+	//abhinava
+	
 	printf ("---Simulation complete.\n");
 	dostats();
 	printf ("---Execution complete.\n");

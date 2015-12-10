@@ -4,10 +4,6 @@ running configure, to aid debugging if configure makes a mistake.
 configure:532: checking for gcc
 configure:609: checking whether the C compiler (gcc -O3 ) works
 configure:623: gcc -o conftest -O3   conftest.c  1>&5
-configure:620:1: warning: type specifier missing, defaults to 'int' [-Wimplicit-int]
-main(){return(0);}
-^
-1 warning generated.
 configure:643: checking whether the C compiler (gcc -O3 ) is a cross-compiler
 configure:648: checking whether we are using GNU C
 configure:672: checking whether gcc accepts -g

@@ -1,0 +1,2 @@
+./dineroIV -informat d -l1-isize 16k -l1-dsize 8192 -l1-ibsize 32 -l1-dbsize 16 < ../../vlads_scripts/traces/cc1.din > output/cc1_out.txt
+
