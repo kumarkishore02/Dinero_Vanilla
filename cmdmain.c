@@ -103,6 +103,19 @@ char *mmaped_trace;
 extern void customize_caches (void);
 #endif
 
+static void
+check (int test, const char * message, ...)
+{
+    if (test) {
+        va_list args;
+        va_start (args, message);
+        vfprintf (stderr, message, args);
+        va_end (args);
+        fprintf (stderr, "\n");
+        exit (EXIT_FAILURE);
+    }
+}
+
 
 /*
  * Generic functions for handling command line arguments.
@@ -1986,14 +1999,15 @@ main (int argc, char **argv)
 	summarize_caches (ci, cd);
 
 //kishore
-        const char * file_name = "./testing/mm.32";	
+        const char * file_name = "../../vlads_scripts/traces/cc1.din";	
 	trace_file = open(file_name, O_RDONLY);
-
+        check (trace_file < 0, "open %s failed: %s", file_name, strerror (errno));
         status = fstat (trace_file, & s);
-        //check (status < 0, "stat %s failed: %s", file_name, strerror (errno));
+        check (status < 0, "stat %s failed: %s", file_name, strerror (errno));
         size = s.st_size;
-
-        mmaped_trace = mmap (0, size, PROT_READ, 0, trace_file, 0);
+	printf("Size %u\n",size);
+        mmaped_trace = mmap (0, size, PROT_READ, MAP_SHARED, trace_file, 0);
+	check (mmaped_trace == MAP_FAILED, "mmap %s failed: %s",file_name, strerror (errno));
 //kishore
 
 	//abhinava

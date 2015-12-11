@@ -43,6 +43,11 @@
  * $Header: /home/edler/dinero/d4/RCS/dinfmt.c,v 1.2 1997/12/08 19:35:24 edler Exp $
  */
 
+#include <stdarg.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/mman.h> 
+#include <errno.h>	
 #include <stddef.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -64,6 +69,11 @@
  * all but the first tuple will be ignored.
  */
 
+//kishore
+//int trace_file;// = "./testing/mm.32";
+//char *mmaped_trace;
+//kishore
+
 d4memref
 tracein_din()
 {
@@ -78,9 +88,11 @@ tracein_din()
 
 	/* skip initial whitespace */
 	do {
-		c = getchar();
+//		c = getchar(); 
+		c = *mmaped_trace++;
+
 	} while (c == ' ' || c == '\t');
-	if (c == EOF) {
+	if (c == '$') {
 		r.address = 0;
 		r.size = 0;
 		r.accesstype = D4TRACE_END;
@@ -93,18 +105,27 @@ tracein_din()
 	if (!isxdigit(c))
 		die (badlabel, tcount, c);
 	atype = c - (isdigit(c) ? '0' : ((islower(c) ? 'a' : 'A') - 10));
-	c = getchar();
+//	c = getchar(); 
+	c = *mmaped_trace++;
+
+
 	if (c != ' ' && c != '\t') {	/* rarely get rest of label */
 		if ((c == 'x' || c == 'X') && atype == 0)
-			c = getchar();	/* ignore leading 0x or 0X */
-		if (c == '\n' || c == EOF)
+//			c = getchar(); 
+			c = *mmaped_trace++;
+
+	/* ignore leading 0x or 0X */
+		if (c == '\n' || c == '$')
 			die (shortline, tcount);
 		while (isxdigit(c)) {
 			atype *= 16;
 			atype += c - (isdigit(c) ? '0' : ((islower(c) ? 'a' : 'A') - 10));
-			c = getchar();
+//			c = getchar(); 
+			c = *mmaped_trace++;
+
+
 		}
-		if (c == '\n' || c == EOF)
+		if (c == '\n' || c == '$')
 			die (shortline, tcount);
 		if (c != ' ' && c != '\t')
 			die (badlabel, tcount, c);
@@ -112,29 +133,44 @@ tracein_din()
 
 	/* skip whitespace between label and address */
 	do {
-		c = getchar();
+//		c = getchar(); 
+		c = *mmaped_trace++;
+
+
 	} while (c == ' ' || c == '\t');
-	if (c == '\n' || c == EOF)
+	if (c == '\n' || c == '$')
 		die (shortline, tcount);
 
 	/* now get the address */
 	if (!isxdigit(c))
 		die (badaddr, tcount, c);
 	addr = c - (isdigit(c) ? '0' : ((islower(c) ? 'a' : 'A') - 10));
-	c = getchar(); 
+//	c = getchar(); 
+	c = *mmaped_trace++;
+
+ 
 	if ((c == 'x' || c == 'X') && addr == 0)
-		c = getchar();	/* ignore leading 0x or 0X */
+//		c = getchar(); 
+		c = *mmaped_trace++;
+
+	/* ignore leading 0x or 0X */
 	while (isxdigit(c)) {
 		addr *= 16;
 		addr += c - (isdigit(c) ? '0' : ((islower(c) ? 'a' : 'A') - 10));
-		c = getchar();
+//		c = getchar(); 
+		c = *mmaped_trace++;
+
+
 	}
-	if (c != EOF && c != '\n' && c != ' ' && c != '\t')
+	if (c != '$' && c != '\n' && c != ' ' && c != '\t')
 		die (badaddr, tcount, c);
 
 	/* skip rest of line */
-	while (c != '\n' && c != EOF)
-		c = getchar();
+	while (c != '\n' && c != '$')
+//		c = getchar(); 
+		c = *mmaped_trace++;
+
+
 	r.accesstype = atype;
 	r.address = addr & ~3;	/* dineroIII is pretty much word-oriented */
 	r.size = 4;

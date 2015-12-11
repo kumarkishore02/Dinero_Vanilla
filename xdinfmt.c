@@ -70,7 +70,7 @@
 
 //kishore
 int trace_file;// = "./testing/mm.32";
-char *mmaped_trace;
+//char *mmaped_trace;
 //kishore
 
 d4memref
@@ -137,7 +137,8 @@ tracein_xdin()
 		atype = D4XINVAL;
 		break;
 	}
-	cc = getchar();
+//	cc = getchar(); 
+	cc = *mmaped_trace++;
 	if (cc == '\n')
 		die (shortline, tcount);
 	if (cc != ' ' && cc != '\t') {
@@ -150,7 +151,8 @@ tracein_xdin()
 
 	/* skip whitespace between atype and address */
 	do {
-		c = getchar();
+//		c = getchar(); 
+		c = *mmaped_trace++;
 	} while (c == ' ' || c == '\t');
 	if (c == '\n' || c == EOF)
 		die (shortline, tcount);
@@ -159,20 +161,24 @@ tracein_xdin()
 	if (!isxdigit(c))
 		die (badaddr, tcount, c);
 	addr = c - (isdigit(c) ? '0' : ((islower(c) ? 'a' : 'A') - 10));
-	c = getchar(); 
+//	c = getchar(); 
+	c = *mmaped_trace++; 
 	if ((c == 'x' || c == 'X') && addr == 0)
-		c = getchar();	/* ignore leading 0x or 0X */
+//		c = getchar(); 
+		c = *mmaped_trace++;	/* ignore leading 0x or 0X */
 	while (isxdigit(c)) {
 		addr *= 16;
 		addr += c - (isdigit(c) ? '0' : ((islower(c) ? 'a' : 'A') - 10));
-		c = getchar();
+//		c = getchar(); 
+		c = *mmaped_trace++;
 	}
 	if (c != EOF && c != '\n' && c != ' ' && c != '\t')
 		die (badaddr, tcount, c);
 
 	/* skip whitespace between addr and size */
 	while (c == ' ' || c == '\t')
-		c = getchar();
+//		c = getchar(); 
+		c = *mmaped_trace++;
 	if (c == EOF || c == '\n')
 		die (nosize, tcount);
 	
@@ -180,20 +186,24 @@ tracein_xdin()
 	if (!isxdigit(c))
 		die (badsize, tcount, c);
 	size = c - (isdigit(c) ? '0' : ((islower(c) ? 'a' : 'A') - 10));
-	c = getchar(); 
+//	c = getchar(); 
+	c = *mmaped_trace++; 
 	if ((c == 'x' || c == 'X') && size == 0)
-		c = getchar();	/* ignore leading 0x or 0X */
+//		c = getchar(); 
+		c = *mmaped_trace++;	/* ignore leading 0x or 0X */
 	while (isxdigit(c)) {
 		size *= 16;
 		size += c - (isdigit(c) ? '0' : ((islower(c) ? 'a' : 'A') - 10));
-		c = getchar();
+//		c = getchar(); 
+		c = *mmaped_trace++;
 	}
 	if (c != EOF && c != '\n' && c != ' ' && c != '\t')
 		die (badsize, tcount, c);
 
 	/* skip rest of line */
 	while (c != '\n' && c != EOF)
-		c = getchar();
+//		c = getchar(); 
+		c = *mmaped_trace++;
 	r.accesstype = atype;
 	r.address = addr;
 	r.size = size;
