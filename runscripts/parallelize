@@ -1,0 +1,5 @@
+perl -pi -e "s/cmdmain\.c/cmdmain_parallel.c/g"  Makefile
+perl -pi -e "s/cmdmain\.o/cmdmain_parallel.o/g"  Makefile
+perl -pi -e "s/cmdmain\.c/cmdmain_parallel.c/g"  Makefile.in
+perl -pi -e "s/cmdmain\.o/cmdmain_parallel.o/g"  Makefile.in
+
