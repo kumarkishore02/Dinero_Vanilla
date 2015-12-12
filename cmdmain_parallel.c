@@ -72,9 +72,10 @@
 //kishore
 //abhinava
 #include <sys/time.h>
+#include "omp.h"
 ////abhinava
 
-
+//const int NUM_PROC = 16;
 /* some global variables */
 char *progname = "dineroIV";		/* for error messages */
 int optstringmax;			/* for help_* functions */
@@ -92,16 +93,29 @@ extern void doargs (int, char **);
 extern void summarize_caches (d4cache *, d4cache *);
 extern void dostats (void);
 extern void do1stats (d4cache *);
-extern d4memref next_trace_item (void);
+extern d4memref next_trace_item (int);
 
 //kishore
-int trace_file;
-char *mmaped_trace;
+int trace_file[NUM_PROC];
+char *mmaped_trace[NUM_PROC];
 //kishore
 
 #if !D4CUSTOM
 extern void customize_caches (void);
 #endif
+
+static void
+check (int test, const char * message, ...)
+{
+    if (test) {
+        va_list args;
+        va_start (args, message);
+        vfprintf (stderr, message, args);
+        va_end (args);
+        fprintf (stderr, "\n");
+        exit (EXIT_FAILURE);
+    }
+}
 
 
 /*
@@ -1712,7 +1726,7 @@ do1stats (d4cache *c)
  * Called to produce each address trace record
  */
 d4memref
-next_trace_item()
+next_trace_item(int fc)
 {
 	d4memref r;
 	static int once = 1;
@@ -1726,7 +1740,7 @@ next_trace_item()
 		if (skipcount > 0) {
 			double tskipcount = skipcount;
 			do {
-				r = input_function();
+				r = input_function(fc);
 				if (r.accesstype == D4TRACE_END) {
 					fprintf (stderr, "%s warning: input ended "
 						 "before -skipcount satisfied\n", progname);
@@ -1736,7 +1750,7 @@ next_trace_item()
 		}
 	}
 	while (1) {
-		r = input_function();
+		r = input_function(fc);
 		if (r.accesstype == D4TRACE_END) {
 			if ((on_trigger != 0 || off_trigger != 0) && !hastoggled)
 				fprintf (stderr, "%s warning: trace discard "
@@ -1944,7 +1958,6 @@ clog2 (unsigned int x)
 int
 main (int argc, char **argv)
 {
-	d4memref r;
 	d4cache *ci, *cd;
 	double tmaxcount = 0, tintcount;
 	double flcount;
@@ -1986,14 +1999,25 @@ main (int argc, char **argv)
 	summarize_caches (ci, cd);
 
 //kishore
-        const char * file_name = "./testing/mm.32";	
-	trace_file = open(file_name, O_RDONLY);
+       int fc;
+        char file_name[NUM_PROC][100];// = {"../../vlads_scripts/traces/cc1.din",};	
+        for(fc=0; fc<NUM_PROC; fc++){
+	   sprintf(file_name[fc], "../../vlads_scripts/split_traces/cc1/cc1_%d.din", fc);
+ 	   //printf("file=%s\n", file_name[fc]);
+ 	}
+         
+        
+        for(fc=0; fc<NUM_PROC; fc++){
+		trace_file[fc] = open(file_name[fc], O_RDONLY);
+	        check (trace_file[fc] < 0, "open %s failed: %s", file_name, strerror (errno));
+	        status = fstat (trace_file[fc], & s);
+	        check (status < 0, "stat %s failed: %s", file_name, strerror (errno));
+	        size = s.st_size;
+	//	printf("Size %u\n",size);
+	        mmaped_trace[fc] = mmap (0, size, PROT_READ, MAP_SHARED, trace_file[fc], 0);
+		check (mmaped_trace[fc] == MAP_FAILED, "mmap %s failed: %s",file_name[fc], strerror (errno));
+        }
 
-        status = fstat (trace_file, & s);
-        //check (status < 0, "stat %s failed: %s", file_name, strerror (errno));
-        size = s.st_size;
-
-        mmaped_trace = mmap (0, size, PROT_READ, 0, trace_file, 0);
 //kishore
 
 	//abhinava
@@ -2005,44 +2029,50 @@ main (int argc, char **argv)
 	printf ("\n---Simulation begins.\n");
 	tintcount = stat_interval;
 	flcount = flushcount;
-	while (1) {
-		r = next_trace_item();
-		if (r.accesstype == D4TRACE_END)
-			goto done;
-		if (maxcount != 0 && tmaxcount >= maxcount) {
-			printf ("---Maximum address count exceeded.\n");
-			break;
-		}
-		switch (r.accesstype) {
-		case D4XINSTRN:	  d4ref (ci, r);  break;
-		case D4XINVAL:	  d4ref (ci, r);  /* fall through */
-		default:	  d4ref (cd, r);  break;
-		}
-		tmaxcount += 1;
-		if (tintcount > 0 && (tintcount -= 1) <= 0) {
-			dostats();
-			tintcount = stat_interval;
-		}
-		if (flcount > 0 && (flcount -= 1) <= 0) {
-			/* flush cache = copy back and invalidate */
-			r.accesstype = D4XCOPYB;
-			r.address = 0;
-			r.size = 0;
-			d4ref (cd, r);
-			r.accesstype = D4XINVAL;
-			d4ref (ci, r);
-			if (ci != cd)
-				d4ref (cd, r);
-			flcount = flushcount;
-		}
-	}
-done:
-	/* copy everything back at the end -- is this really a good idea? XXX */
-	r.accesstype = D4XCOPYB;
-	r.address = 0;
-	r.size = 0;
-	d4ref (cd, r);
+        
+#pragma omp parallel for 
+for(fc =0; fc<NUM_PROC;fc++) {
 
+d4memref r;
+	   while (1) {
+	   	r = next_trace_item(fc);
+	   	if (r.accesstype == D4TRACE_END)
+	   		goto done;
+	   	if (maxcount != 0 && tmaxcount >= maxcount) {
+	   		printf ("---Maximum address count exceeded.\n");
+	   		break;
+	   	}
+	   	switch (r.accesstype) {
+	   	case D4XINSTRN:	  d4ref (ci, r);  break;
+	   	case D4XINVAL:	  d4ref (ci, r);  /* fall through */
+	   	default:	  d4ref (cd, r);  break;
+	   	}
+	   	tmaxcount += 1;
+	   	if (tintcount > 0 && (tintcount -= 1) <= 0) {
+	   		dostats();
+	   		tintcount = stat_interval;
+	   	}
+	   	if (flcount > 0 && (flcount -= 1) <= 0) {
+	   		/* flush cache = copy back and invalidate */
+	   		r.accesstype = D4XCOPYB;
+	   		r.address = 0;
+	   		r.size = 0;
+	   		d4ref (cd, r);
+	   		r.accesstype = D4XINVAL;
+	   		d4ref (ci, r);
+	   		if (ci != cd)
+	   			d4ref (cd, r);
+	   		flcount = flushcount;
+	   	}
+	   }
+	done:
+		/* copy everything back at the end -- is this really a good idea? XXX */
+		r.accesstype = D4XCOPYB;
+		r.address = 0;
+		r.size = 0;
+		d4ref (cd, r);
+		printf("End of trace %d\n",fc);
+	}
 	//abhinava
 	gettimeofday(&end, NULL);
 	time_elapsed += (end.tv_sec - begin.tv_sec)*1000 + (end.tv_usec-begin.tv_usec)/1000 ;	

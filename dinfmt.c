@@ -75,7 +75,7 @@
 //kishore
 
 d4memref
-tracein_din()
+tracein_din(int fc)
 {
 	static double tcount = 1;	/* double to increase range */
 	static char badlabel[] = "din format error on trace record %.0f: non hex digit (code 0x%x) in label\n";
@@ -89,7 +89,7 @@ tracein_din()
 	/* skip initial whitespace */
 	do {
 //		c = getchar(); 
-		c = *mmaped_trace++;
+		c = *(mmaped_trace[fc]++);
 
 	} while (c == ' ' || c == '\t');
 	if (c == '$') {
@@ -106,13 +106,13 @@ tracein_din()
 		die (badlabel, tcount, c);
 	atype = c - (isdigit(c) ? '0' : ((islower(c) ? 'a' : 'A') - 10));
 //	c = getchar(); 
-	c = *mmaped_trace++;
+	c = *(mmaped_trace[fc]++);
 
 
 	if (c != ' ' && c != '\t') {	/* rarely get rest of label */
 		if ((c == 'x' || c == 'X') && atype == 0)
 //			c = getchar(); 
-			c = *mmaped_trace++;
+			c = *(mmaped_trace[fc]++);
 
 	/* ignore leading 0x or 0X */
 		if (c == '\n' || c == '$')
@@ -121,7 +121,7 @@ tracein_din()
 			atype *= 16;
 			atype += c - (isdigit(c) ? '0' : ((islower(c) ? 'a' : 'A') - 10));
 //			c = getchar(); 
-			c = *mmaped_trace++;
+			c = *(mmaped_trace[fc]++);
 
 
 		}
@@ -134,7 +134,7 @@ tracein_din()
 	/* skip whitespace between label and address */
 	do {
 //		c = getchar(); 
-		c = *mmaped_trace++;
+		c = *(mmaped_trace[fc]++);
 
 
 	} while (c == ' ' || c == '\t');
@@ -146,19 +146,19 @@ tracein_din()
 		die (badaddr, tcount, c);
 	addr = c - (isdigit(c) ? '0' : ((islower(c) ? 'a' : 'A') - 10));
 //	c = getchar(); 
-	c = *mmaped_trace++;
+	c = *(mmaped_trace[fc]++);
 
  
 	if ((c == 'x' || c == 'X') && addr == 0)
 //		c = getchar(); 
-		c = *mmaped_trace++;
+		c = *(mmaped_trace[fc]++);
 
 	/* ignore leading 0x or 0X */
 	while (isxdigit(c)) {
 		addr *= 16;
 		addr += c - (isdigit(c) ? '0' : ((islower(c) ? 'a' : 'A') - 10));
 //		c = getchar(); 
-		c = *mmaped_trace++;
+		c = *(mmaped_trace[fc]++);
 
 
 	}
@@ -168,7 +168,7 @@ tracein_din()
 	/* skip rest of line */
 	while (c != '\n' && c != '$')
 //		c = getchar(); 
-		c = *mmaped_trace++;
+		c = *(mmaped_trace[fc]++);
 
 
 	r.accesstype = atype;

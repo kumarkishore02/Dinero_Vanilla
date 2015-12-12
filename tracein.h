@@ -43,16 +43,16 @@
  * $Header: /home/edler/dinero/d4/RCS/tracein.h,v 1.4 1997/12/08 19:35:24 edler Exp $
  */
 
-
+#define NUM_PROC  16
 /* One of the following functions is called to generate each trace record */
 extern d4memref tracein_xdin (void);
-extern d4memref tracein_din (void);
+extern d4memref tracein_din (int);
 extern d4memref tracein_pixie32 (void);
 extern d4memref tracein_pixie64 (void);
 extern d4memref tracein_binary (void);
 
 /* A pointer to one of the above functions */
-extern d4memref (*input_function) (void);
+extern d4memref (*input_function) (int);
 
 /* the accesstype returned by next_trace_item when the trace is exhausted */
 #define D4TRACE_END	D4NUMACCESSTYPES
@@ -60,8 +60,8 @@ extern d4memref (*input_function) (void);
 /* -informat arg */
 extern int informat;
 //kishore
-extern int trace_file;
-extern char *mmaped_trace;
+extern int trace_file[NUM_PROC];
+extern char *mmaped_trace[NUM_PROC];
 
 /* check that a recognized input format has been specified */
 extern void verify_trace_format (void);

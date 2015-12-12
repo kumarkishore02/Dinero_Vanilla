@@ -1,0 +1,1 @@
+gcc -O3 -g -Wall -Wcast-qual -Wshadow -Wpointer-arith -Wmissing-prototypes -DNDEBUG -I.   -c -o cmdmain_parallel.o cmdmain_parallel.c

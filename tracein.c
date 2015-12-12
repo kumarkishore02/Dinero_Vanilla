@@ -58,7 +58,7 @@
 #include "cmdd4.h"
 #include "tracein.h"
 
-d4memref (*input_function) (void);
+d4memref (*input_function) (int);
 
 /*
  * This function is called to get each trace record
@@ -71,19 +71,22 @@ verify_trace_format()
 	default:  shorthelp ("unknown input format '%c'\n", informat);
 	case 0:	  shorthelp ("no input format specified\n");
 	case 'D':				/* extended "din" format */
-		  input_function = tracein_xdin;
+		  input_function = tracein_din;
 		  break;
 	case 'd':				/* traditional "din" format */
 		  input_function = tracein_din;
 		  break;
 	case 'p':				/* 32-bit pixie -idtrace format */
-		  input_function = tracein_pixie32;
+		 // input_function = tracein_pixie32;
+		  input_function = tracein_din;
 		  break;
 	case 'P':				/* 64-bit pixie -idtrace format */
-		  input_function = tracein_pixie64;
+		  //input_function = tracein_pixie64;
+		  input_function = tracein_din;//pixie64;
 		  break;
 	case 'b':				/* binary format, similar to din */
-		  input_function = tracein_binary;
+		  //input_function = tracein_binary;
+		  input_function = tracein_din;//binary;
 		  break;
 	}
 }
