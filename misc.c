@@ -631,7 +631,7 @@ d4put_mref (d4pendstack *m)
  * to own cache or towards memory
  */
 void
-d4_dopending (d4cache *c, d4pendstack *newm)
+d4_dopending (d4cache *c, d4pendstack *newm, int fc)
 {
 	do {
 		c->pending = newm->next;
@@ -648,9 +648,9 @@ d4_dopending (d4cache *c, d4pendstack *newm)
 					exit (9);
 			case D4XMISC:
 			case D4XREAD:
-			case D4XINSTRN:	c->bytes_read += newm->m.size;
+			case D4XINSTRN:	c->bytes_read[fc] += newm->m.size;
 					break;
-			case D4XWRITE:	c->bytes_written += newm->m.size;
+			case D4XWRITE:	c->bytes_written[fc] += newm->m.size;
 					break;
 			case D4XCOPYB:
 			case D4XINVAL:	/* don't count these */
@@ -721,7 +721,7 @@ d4_invblock (d4cache *c, int stacknum, d4stacknode *ptr)
  * NOTE: this function does not invalidate!
  */
 void
-d4copyback (d4cache *c, const d4memref *m, int prop)
+d4copyback (d4cache *c, const d4memref *m, int prop, int fc)
 {
 	int stacknum;
 	d4stacknode *ptr;
@@ -754,7 +754,7 @@ d4copyback (d4cache *c, const d4memref *m, int prop)
 				d4_wbblock (c, ptr, c->lg2subblocksize);
 	}
 	if ((newm = c->pending) != NULL)
-		d4_dopending (c, newm);
+		d4_dopending (c, newm, fc);
 }
 
 
@@ -772,7 +772,7 @@ d4copyback (d4cache *c, const d4memref *m, int prop)
  *	you have to call d4copyback first for that.
  */
 void
-d4invalidate (d4cache *c, const d4memref *m, int prop)
+d4invalidate (d4cache *c, const d4memref *m, int prop, int fc)
 {
 	int stacknum;
 	d4stacknode *ptr;
@@ -814,7 +814,7 @@ d4invalidate (d4cache *c, const d4memref *m, int prop)
 	if ((c->flags & D4F_CCC) != 0)
 		d4_invinfcache (c, m);
 	if ((newm = c->pending) != NULL)
-		d4_dopending (c, newm);
+		d4_dopending (c, newm, fc);
 }
 
 

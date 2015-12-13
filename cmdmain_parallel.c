@@ -91,8 +91,8 @@ char *customname;			/* for -custom, name of executable */
 extern int do1arg (const char *, const char *);
 extern void doargs (int, char **);
 extern void summarize_caches (d4cache *, d4cache *);
-extern void dostats (void);
-extern void do1stats (d4cache *);
+extern void dostats (int);
+extern void do1stats (d4cache *,int);
 extern d4memref next_trace_item (int);
 
 //kishore
@@ -1114,7 +1114,7 @@ summarize_caches (d4cache *ci, d4cache *cd)
  * Print out the stuff the user really wants
  */
 void
-dostats()
+dostats(int fc)
 {
 	int lev;
 	int i;
@@ -1132,19 +1132,19 @@ dostats()
 
 			/* add the i & d stats into the new bogus structure */
 			for (i = 0;  i < 2 * D4NUMACCESSTYPES;  i++) {
-				cc.fetch[i]          = levcache[1][lev]->fetch[i]          + levcache[2][lev]->fetch[i];
-				cc.miss[i]           = levcache[1][lev]->miss[i]           + levcache[2][lev]->miss[i];
-				cc.blockmiss[i]      = levcache[1][lev]->blockmiss[i]      + levcache[2][lev]->blockmiss[i];
-				cc.comp_miss[i]      = levcache[1][lev]->comp_miss[i]      + levcache[2][lev]->comp_miss[i];
-				cc.comp_blockmiss[i] = levcache[1][lev]->comp_blockmiss[i] + levcache[2][lev]->comp_blockmiss[i];
-				cc.cap_miss[i]       = levcache[1][lev]->cap_miss[i]       + levcache[2][lev]->cap_miss[i];
-				cc.cap_blockmiss[i]  = levcache[1][lev]->cap_blockmiss[i]  + levcache[2][lev]->cap_blockmiss[i];
-				cc.conf_miss[i]      = levcache[1][lev]->conf_miss[i]      + levcache[2][lev]->conf_miss[i];
-				cc.conf_blockmiss[i] = levcache[1][lev]->conf_blockmiss[i] + levcache[2][lev]->conf_blockmiss[i];
+				cc.fetch[i][fc]          = levcache[1][lev]->fetch[i][fc]          + levcache[2][lev]->fetch[i][fc];
+				cc.miss[i][fc]           = levcache[1][lev]->miss[i][fc]           + levcache[2][lev]->miss[i][fc];
+				cc.blockmiss[i][fc]      = levcache[1][lev]->blockmiss[i][fc]      + levcache[2][lev]->blockmiss[i][fc];
+				cc.comp_miss[i][fc]      = levcache[1][lev]->comp_miss[i][fc]      + levcache[2][lev]->comp_miss[i][fc];
+				cc.comp_blockmiss[i][fc] = levcache[1][lev]->comp_blockmiss[i][fc] + levcache[2][lev]->comp_blockmiss[i][fc];
+				cc.cap_miss[i][fc]       = levcache[1][lev]->cap_miss[i][fc]       + levcache[2][lev]->cap_miss[i][fc];
+				cc.cap_blockmiss[i][fc]  = levcache[1][lev]->cap_blockmiss[i][fc]  + levcache[2][lev]->cap_blockmiss[i][fc];
+				cc.conf_miss[i][fc]      = levcache[1][lev]->conf_miss[i][fc]      + levcache[2][lev]->conf_miss[i][fc];
+				cc.conf_blockmiss[i][fc] = levcache[1][lev]->conf_blockmiss[i][fc] + levcache[2][lev]->conf_blockmiss[i][fc];
 			}
-			cc.multiblock    = levcache[1][lev]->multiblock    + levcache[2][lev]->multiblock;
-			cc.bytes_read    = levcache[1][lev]->bytes_read    + levcache[2][lev]->bytes_read;
-			cc.bytes_written = levcache[1][lev]->bytes_written + levcache[2][lev]->bytes_written;
+			cc.multiblock[fc]    = levcache[1][lev]->multiblock[fc]    + levcache[2][lev]->multiblock[fc];
+			cc.bytes_read[fc]    = levcache[1][lev]->bytes_read[fc]    + levcache[2][lev]->bytes_read[fc];
+			cc.bytes_written[fc] = levcache[1][lev]->bytes_written[fc] + levcache[2][lev]->bytes_written[fc];
 
 			cc.flags = levcache[1][lev]->flags | levcache[2][lev]->flags; /* get D4F_CCC */
 
@@ -1155,15 +1155,15 @@ dostats()
 			cc.lg2subblocksize = levcache[1][lev]->lg2subblocksize;
 			cc.lg2blocksize = levcache[1][lev]->lg2blocksize;
 
-			do1stats (&cc);
+			do1stats (&cc, fc);
 		}
 		else {
 			if (levcache[0][lev] != NULL)
-				do1stats (levcache[0][lev]);
+				do1stats (levcache[0][lev],fc);
 			if (levcache[1][lev] != NULL)
-				do1stats (levcache[1][lev]);
+				do1stats (levcache[1][lev],fc);
 			if (levcache[2][lev] != NULL)
-				do1stats (levcache[2][lev]);
+				do1stats (levcache[2][lev],fc);
 		}
 	}
 }
@@ -1174,7 +1174,7 @@ dostats()
  * Print stats for 1 cache
  */
 void
-do1stats (d4cache *c)
+do1stats (d4cache *c, int fc)
 {
 	double	demand_fetch_data,
 		demand_fetch_alltype;
@@ -1208,75 +1208,75 @@ do1stats (d4cache *c)
 	/*
 	 * Print Fetch Numbers
 	 */
-	demand_fetch_data = c->fetch[D4XMISC] 
-			  + c->fetch[D4XREAD]
-		      	  + c->fetch[D4XWRITE];
+	demand_fetch_data = c->fetch[D4XMISC][fc] 
+			  + c->fetch[D4XREAD][fc]
+		      	  + c->fetch[D4XWRITE][fc];
 	demand_fetch_alltype = demand_fetch_data 
-			  + c->fetch[D4XINSTRN];
+			  + c->fetch[D4XINSTRN][fc];
 
 	printf(	" Demand Fetches		%12.0f	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f\n",
 		demand_fetch_alltype,
-		c->fetch[D4XINSTRN],
+		c->fetch[D4XINSTRN][fc],
 		demand_fetch_data,
-		c->fetch[D4XREAD],
-		c->fetch[D4XWRITE],
-		c->fetch[D4XMISC]);
+		c->fetch[D4XREAD][fc],
+		c->fetch[D4XWRITE][fc],
+		c->fetch[D4XMISC][fc]);
 
 	floatnum = NONZERO(demand_fetch_alltype);
 
 	printf(	"  Fraction of total	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f\n",
 		demand_fetch_alltype / floatnum,
-		c->fetch[D4XINSTRN] / floatnum,
+		c->fetch[D4XINSTRN][fc] / floatnum,
 		demand_fetch_data / floatnum,
-		c->fetch[D4XREAD] / floatnum,
-		c->fetch[D4XWRITE] / floatnum,
-		c->fetch[D4XMISC] / floatnum);
+		c->fetch[D4XREAD][fc] / floatnum,
+		c->fetch[D4XWRITE][fc] / floatnum,
+		c->fetch[D4XMISC][fc] / floatnum);
 
 	/*
 	 * Prefetching?
 	 */
-	prefetch_fetch_data = c->fetch[D4PREFETCH+D4XMISC] 
-			  + c->fetch[D4PREFETCH+D4XREAD]
-		      	  + c->fetch[D4PREFETCH+D4XWRITE];
+	prefetch_fetch_data = c->fetch[D4PREFETCH+D4XMISC][fc] 
+			  + c->fetch[D4PREFETCH+D4XREAD][fc]
+		      	  + c->fetch[D4PREFETCH+D4XWRITE][fc];
 	if (c->prefetchf != d4prefetch_none) {
 		prefetch_fetch_alltype = prefetch_fetch_data 
-				  + c->fetch[D4PREFETCH+D4XINSTRN];
+				  + c->fetch[D4PREFETCH+D4XINSTRN][fc];
 
 		printf(	" Prefetch Fetches	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f\n",
 			prefetch_fetch_alltype,
-			c->fetch[D4PREFETCH+D4XINSTRN],
+			c->fetch[D4PREFETCH+D4XINSTRN][fc],
 			prefetch_fetch_data,
-			c->fetch[D4PREFETCH+D4XREAD],
-			c->fetch[D4PREFETCH+D4XWRITE],
-			c->fetch[D4PREFETCH+D4XMISC]);
+			c->fetch[D4PREFETCH+D4XREAD][fc],
+			c->fetch[D4PREFETCH+D4XWRITE][fc],
+			c->fetch[D4PREFETCH+D4XMISC][fc]);
 
 		floatnum = NONZERO(prefetch_fetch_alltype);
 
 		printf(	"  Fraction		%12.4f	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f\n",
 			prefetch_fetch_alltype / floatnum,
-			c->fetch[D4PREFETCH+D4XINSTRN] / floatnum,
+			c->fetch[D4PREFETCH+D4XINSTRN][fc] / floatnum,
 			prefetch_fetch_data / floatnum,
-			c->fetch[D4PREFETCH+D4XREAD] / floatnum,
-			c->fetch[D4PREFETCH+D4XWRITE] / floatnum,
-			c->fetch[D4PREFETCH+D4XMISC] / floatnum);
+			c->fetch[D4PREFETCH+D4XREAD][fc] / floatnum,
+			c->fetch[D4PREFETCH+D4XWRITE][fc] / floatnum,
+			c->fetch[D4PREFETCH+D4XMISC][fc] / floatnum);
 
 		printf(	" Total Fetches		%12.0f	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f\n",
 			demand_fetch_alltype + prefetch_fetch_alltype,
-			c->fetch[D4XINSTRN] + c->fetch[D4PREFETCH+D4XINSTRN],
+			c->fetch[D4XINSTRN][fc]+ c->fetch[D4PREFETCH+D4XINSTRN][fc],
 			demand_fetch_data + prefetch_fetch_data,
-			c->fetch[D4XREAD] + c->fetch[D4PREFETCH+D4XREAD],
-			c->fetch[D4XWRITE] + c->fetch[D4PREFETCH+D4XWRITE],
-			c->fetch[D4XMISC] + c->fetch[D4PREFETCH+D4XMISC]);
+			c->fetch[D4XREAD][fc]+ c->fetch[D4PREFETCH+D4XREAD][fc],
+			c->fetch[D4XWRITE][fc]+ c->fetch[D4PREFETCH+D4XWRITE][fc],
+			c->fetch[D4XMISC][fc]+ c->fetch[D4PREFETCH+D4XMISC][fc]);
 
 		floatnum = NONZERO(demand_fetch_alltype + prefetch_fetch_alltype);
 
 		printf(	"  Fraction		%12.4f	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f\n",
 			(demand_fetch_alltype + prefetch_fetch_alltype) / floatnum,
-			(c->fetch[D4XINSTRN] + c->fetch[D4PREFETCH+D4XINSTRN]) / floatnum,
+			(c->fetch[D4XINSTRN][fc]+ c->fetch[D4PREFETCH+D4XINSTRN][fc]) / floatnum,
 			(demand_fetch_data + prefetch_fetch_data) / floatnum,
-			(c->fetch[D4XREAD] + c->fetch[D4PREFETCH+D4XREAD]) / floatnum,
-			(c->fetch[D4XWRITE] + c->fetch[D4PREFETCH+D4XWRITE]) / floatnum,
-			(c->fetch[D4XMISC] + c->fetch[D4PREFETCH+D4XMISC]) / floatnum);
+			(c->fetch[D4XREAD][fc]+ c->fetch[D4PREFETCH+D4XREAD][fc]) / floatnum,
+			(c->fetch[D4XWRITE][fc]+ c->fetch[D4PREFETCH+D4XWRITE][fc]) / floatnum,
+			(c->fetch[D4XMISC][fc]+ c->fetch[D4PREFETCH+D4XMISC][fc]) / floatnum);
 
 	} /* End of prefetching. */
 	printf("\n");
@@ -1288,202 +1288,202 @@ do1stats (d4cache *c)
 	/*
 	 * Print Miss Numbers
 	 */
-	demand_data = c->miss[D4XMISC] 
-			  + c->miss[D4XREAD]
-		      	  + c->miss[D4XWRITE];
+	demand_data = c->miss[D4XMISC][fc] 
+			  + c->miss[D4XREAD][fc]
+		      	  + c->miss[D4XWRITE][fc];
 	demand_alltype = demand_data 
-			  + c->miss[D4XINSTRN];
+			  + c->miss[D4XINSTRN][fc];
 
 	printf(	" Demand Misses		%12.0f	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f\n",
 		demand_alltype,
-		c->miss[D4XINSTRN],
+		c->miss[D4XINSTRN][fc],
 		demand_data,
-		c->miss[D4XREAD],
-		c->miss[D4XWRITE],
-		c->miss[D4XMISC]);
+		c->miss[D4XREAD][fc],
+		c->miss[D4XWRITE][fc],
+		c->miss[D4XMISC][fc]);
 
 
 	printf(	"  Demand miss rate	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f\n",
 		demand_alltype / NONZERO(demand_fetch_alltype),
-		c->miss[D4XINSTRN] / NONZERO(c->fetch[D4XINSTRN]),
+		c->miss[D4XINSTRN][fc] / NONZERO(c->fetch[D4XINSTRN][fc]),
 		demand_data / NONZERO(demand_fetch_data),
-		c->miss[D4XREAD] / NONZERO(c->fetch[D4XREAD]),
-		c->miss[D4XWRITE] / NONZERO(c->fetch[D4XWRITE]),
-		c->miss[D4XMISC] / NONZERO(c->fetch[D4XMISC]));
+		c->miss[D4XREAD][fc] / NONZERO(c->fetch[D4XREAD][fc]),
+		c->miss[D4XWRITE][fc] / NONZERO(c->fetch[D4XWRITE][fc]),
+		c->miss[D4XMISC][fc] / NONZERO(c->fetch[D4XMISC][fc]));
 
 	if (c->flags & D4F_CCC) {
-		demand_comp_data = c->comp_miss[D4XMISC] 
-			  + c->comp_miss[D4XREAD]
-		      	  + c->comp_miss[D4XWRITE];
+		demand_comp_data = c->comp_miss[D4XMISC][fc] 
+			  + c->comp_miss[D4XREAD][fc]
+		      	  + c->comp_miss[D4XWRITE][fc];
 		demand_comp_alltype = demand_comp_data 
-			  + c->comp_miss[D4XINSTRN];
-		demand_cap_data = c->cap_miss[D4XMISC] 
-			  + c->cap_miss[D4XREAD]
-		      	  + c->cap_miss[D4XWRITE];
+			  + c->comp_miss[D4XINSTRN][fc];
+		demand_cap_data = c->cap_miss[D4XMISC][fc] 
+			  + c->cap_miss[D4XREAD][fc]
+		      	  + c->cap_miss[D4XWRITE][fc];
 		demand_cap_alltype = demand_cap_data 
-			  + c->cap_miss[D4XINSTRN];
-		demand_conf_data = c->conf_miss[D4XMISC] 
-			  + c->conf_miss[D4XREAD]
-		      	  + c->conf_miss[D4XWRITE];
+			  + c->cap_miss[D4XINSTRN][fc];
+		demand_conf_data = c->conf_miss[D4XMISC][fc] 
+			  + c->conf_miss[D4XREAD][fc]
+		      	  + c->conf_miss[D4XWRITE][fc];
 		demand_conf_alltype = demand_conf_data 
-			  + c->conf_miss[D4XINSTRN];
+			  + c->conf_miss[D4XINSTRN][fc];
 
 		printf(	"   Compulsory misses	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f\n",
 			demand_comp_alltype,
-			c->comp_miss[D4XINSTRN],
+			c->comp_miss[D4XINSTRN][fc],
 			demand_comp_data,
-			c->comp_miss[D4XREAD],
-			c->comp_miss[D4XWRITE],
-			c->comp_miss[D4XMISC]);
+			c->comp_miss[D4XREAD][fc],
+			c->comp_miss[D4XWRITE][fc],
+			c->comp_miss[D4XMISC][fc]);
 	    
 		printf(	"   Capacity misses	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f\n",
 			demand_cap_alltype,
-			c->cap_miss[D4XINSTRN],
+			c->cap_miss[D4XINSTRN][fc],
 			demand_cap_data,
-			c->cap_miss[D4XREAD],
-			c->cap_miss[D4XWRITE],
-			c->cap_miss[D4XMISC]);
+			c->cap_miss[D4XREAD][fc],
+			c->cap_miss[D4XWRITE][fc],
+			c->cap_miss[D4XMISC][fc]);
 	    
 		printf(	"   Conflict misses	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f\n",
 			demand_conf_alltype,
-			c->conf_miss[D4XINSTRN],
+			c->conf_miss[D4XINSTRN][fc],
 			demand_conf_data,
-			c->conf_miss[D4XREAD],
-			c->conf_miss[D4XWRITE],
-			c->conf_miss[D4XMISC]);
+			c->conf_miss[D4XREAD][fc],
+			c->conf_miss[D4XWRITE][fc],
+			c->conf_miss[D4XMISC][fc]);
 
 		printf(	"   Compulsory fraction	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f\n",
 			demand_comp_alltype / NONZERO(demand_alltype),
-			c->comp_miss[D4XINSTRN] / NONZERO(c->miss[D4XINSTRN]),
+			c->comp_miss[D4XINSTRN][fc] / NONZERO(c->miss[D4XINSTRN][fc]),
 			demand_comp_data / NONZERO(demand_data),
-			c->comp_miss[D4XREAD] / NONZERO(c->miss[D4XREAD]),
-			c->comp_miss[D4XWRITE] / NONZERO(c->miss[D4XWRITE]),
-			c->comp_miss[D4XMISC] / NONZERO(c->miss[D4XMISC]));
+			c->comp_miss[D4XREAD][fc] / NONZERO(c->miss[D4XREAD][fc]),
+			c->comp_miss[D4XWRITE][fc] / NONZERO(c->miss[D4XWRITE][fc]),
+			c->comp_miss[D4XMISC][fc] / NONZERO(c->miss[D4XMISC][fc]));
 	    
 		printf(	"   Capacity fraction	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f\n",
 			demand_cap_alltype / NONZERO(demand_alltype),
-			c->cap_miss[D4XINSTRN]  / NONZERO(c->miss[D4XINSTRN]),
+			c->cap_miss[D4XINSTRN][fc]  / NONZERO(c->miss[D4XINSTRN][fc]),
 			demand_cap_data / NONZERO(demand_data),
-			c->cap_miss[D4XREAD] / NONZERO(c->miss[D4XREAD]),
-			c->cap_miss[D4XWRITE] / NONZERO(c->miss[D4XWRITE]),
-			c->cap_miss[D4XMISC] / NONZERO(c->miss[D4XMISC]));
+			c->cap_miss[D4XREAD][fc] / NONZERO(c->miss[D4XREAD][fc]),
+			c->cap_miss[D4XWRITE][fc] / NONZERO(c->miss[D4XWRITE][fc]),
+			c->cap_miss[D4XMISC][fc] / NONZERO(c->miss[D4XMISC][fc]));
 	    
 		printf(	"   Conflict fraction	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f\n",
 			demand_conf_alltype / NONZERO(demand_alltype),
-			c->conf_miss[D4XINSTRN] / NONZERO(c->miss[D4XINSTRN]),
+			c->conf_miss[D4XINSTRN][fc] / NONZERO(c->miss[D4XINSTRN][fc]),
 			demand_conf_data / NONZERO(demand_data),
-			c->conf_miss[D4XREAD] / NONZERO(c->miss[D4XREAD]),
-			c->conf_miss[D4XWRITE] / NONZERO(c->miss[D4XWRITE]),
-			c->conf_miss[D4XMISC] / NONZERO(c->miss[D4XMISC]));
+			c->conf_miss[D4XREAD][fc] / NONZERO(c->miss[D4XREAD][fc]),
+			c->conf_miss[D4XWRITE][fc] / NONZERO(c->miss[D4XWRITE][fc]),
+			c->conf_miss[D4XMISC][fc] / NONZERO(c->miss[D4XMISC][fc]));
 	}
 
 	/*
 	 * Prefetch misses?
 	 */
 	if (c->prefetchf != d4prefetch_none) {
-		prefetch_data = c->miss[D4PREFETCH+D4XMISC] 
-				  + c->miss[D4PREFETCH+D4XREAD]
-			      	  + c->miss[D4PREFETCH+D4XWRITE];
+		prefetch_data = c->miss[D4PREFETCH+D4XMISC][fc] 
+				  + c->miss[D4PREFETCH+D4XREAD][fc]
+			      	  + c->miss[D4PREFETCH+D4XWRITE][fc];
 		prefetch_alltype = prefetch_data 
-				  + c->miss[D4PREFETCH+D4XINSTRN];
+				  + c->miss[D4PREFETCH+D4XINSTRN][fc];
 
 		printf(	" Prefetch Misses	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f\n",
 			prefetch_alltype,
-			c->miss[D4PREFETCH+D4XINSTRN],
+			c->miss[D4PREFETCH+D4XINSTRN][fc],
 			prefetch_data,
-			c->miss[D4PREFETCH+D4XREAD],
-			c->miss[D4PREFETCH+D4XWRITE],
-			c->miss[D4PREFETCH+D4XMISC]);
+			c->miss[D4PREFETCH+D4XREAD][fc],
+			c->miss[D4PREFETCH+D4XWRITE][fc],
+			c->miss[D4PREFETCH+D4XMISC][fc]);
 
 		printf(	"  PF miss rate		%12.4f	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f\n",
 			prefetch_alltype / NONZERO(prefetch_fetch_alltype),
-			c->miss[D4PREFETCH+D4XINSTRN] / NONZERO(c->fetch[D4PREFETCH+D4XINSTRN]),
+			c->miss[D4PREFETCH+D4XINSTRN][fc] / NONZERO(c->fetch[D4PREFETCH+D4XINSTRN][fc]),
 			prefetch_data / NONZERO(prefetch_fetch_data),
-			c->miss[D4PREFETCH+D4XREAD] / NONZERO(c->fetch[D4PREFETCH+D4XREAD]),
-			c->miss[D4PREFETCH+D4XWRITE] / NONZERO(c->fetch[D4PREFETCH+D4XWRITE]),
-			c->miss[D4PREFETCH+D4XMISC] / NONZERO(c->fetch[D4PREFETCH+D4XMISC]));
+			c->miss[D4PREFETCH+D4XREAD][fc] / NONZERO(c->fetch[D4PREFETCH+D4XREAD][fc]),
+			c->miss[D4PREFETCH+D4XWRITE][fc] / NONZERO(c->fetch[D4PREFETCH+D4XWRITE][fc]),
+			c->miss[D4PREFETCH+D4XMISC][fc] / NONZERO(c->fetch[D4PREFETCH+D4XMISC][fc]));
 
 		if (c->flags & D4F_CCC) {
-			demand_comp_data = c->comp_miss[D4PREFETCH+D4XMISC] 
-			  + c->comp_miss[D4PREFETCH+D4XREAD]
-		      	  + c->comp_miss[D4PREFETCH+D4XWRITE];
+			demand_comp_data = c->comp_miss[D4PREFETCH+D4XMISC][fc] 
+			  + c->comp_miss[D4PREFETCH+D4XREAD][fc]
+		      	  + c->comp_miss[D4PREFETCH+D4XWRITE][fc];
 			demand_comp_alltype = demand_comp_data 
-			  + c->comp_miss[D4PREFETCH+D4XINSTRN];
-			demand_cap_data = c->cap_miss[D4PREFETCH+D4XMISC] 
-			  + c->cap_miss[D4PREFETCH+D4XREAD]
-		      	  + c->cap_miss[D4PREFETCH+D4XWRITE];
+			  + c->comp_miss[D4PREFETCH+D4XINSTRN][fc];
+			demand_cap_data = c->cap_miss[D4PREFETCH+D4XMISC][fc] 
+			  + c->cap_miss[D4PREFETCH+D4XREAD][fc]
+		      	  + c->cap_miss[D4PREFETCH+D4XWRITE][fc];
 			demand_cap_alltype = demand_cap_data 
-			  + c->cap_miss[D4PREFETCH+D4XINSTRN];
-			demand_conf_data = c->conf_miss[D4PREFETCH+D4XMISC] 
-			  + c->conf_miss[D4PREFETCH+D4XREAD]
-		      	  + c->conf_miss[D4PREFETCH+D4XWRITE];
+			  + c->cap_miss[D4PREFETCH+D4XINSTRN][fc];
+			demand_conf_data = c->conf_miss[D4PREFETCH+D4XMISC][fc] 
+			  + c->conf_miss[D4PREFETCH+D4XREAD][fc]
+		      	  + c->conf_miss[D4PREFETCH+D4XWRITE][fc];
 			demand_conf_alltype = demand_conf_data 
-			  + c->conf_miss[D4PREFETCH+D4XINSTRN];
+			  + c->conf_miss[D4PREFETCH+D4XINSTRN][fc];
 
 			printf(	"   PF compulsory misses	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f\n",
 				demand_comp_alltype,
-				c->comp_miss[D4PREFETCH+D4XINSTRN],
+				c->comp_miss[D4PREFETCH+D4XINSTRN][fc],
 				demand_comp_data,
-				c->comp_miss[D4PREFETCH+D4XREAD],
-				c->comp_miss[D4PREFETCH+D4XWRITE],
-				c->comp_miss[D4PREFETCH+D4XMISC]);
+				c->comp_miss[D4PREFETCH+D4XREAD][fc],
+				c->comp_miss[D4PREFETCH+D4XWRITE][fc],
+				c->comp_miss[D4PREFETCH+D4XMISC][fc]);
 
 			printf(	"   PF capacity misses	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f\n",
 				demand_cap_alltype,
-				c->cap_miss[D4PREFETCH+D4XINSTRN],
+				c->cap_miss[D4PREFETCH+D4XINSTRN][fc],
 				demand_cap_data,
-				c->cap_miss[D4PREFETCH+D4XREAD],
-				c->cap_miss[D4PREFETCH+D4XWRITE],
-				c->cap_miss[D4PREFETCH+D4XMISC]);
+				c->cap_miss[D4PREFETCH+D4XREAD][fc],
+				c->cap_miss[D4PREFETCH+D4XWRITE][fc],
+				c->cap_miss[D4PREFETCH+D4XMISC][fc]);
 
 			printf(	"   PF conflict misses	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f\n",
 				demand_conf_alltype,
-				c->conf_miss[D4PREFETCH+D4XINSTRN],
+				c->conf_miss[D4PREFETCH+D4XINSTRN][fc],
 				demand_conf_data,
-				c->conf_miss[D4PREFETCH+D4XREAD],
-				c->conf_miss[D4PREFETCH+D4XWRITE],
-				c->conf_miss[D4PREFETCH+D4XMISC]);
+				c->conf_miss[D4PREFETCH+D4XREAD][fc],
+				c->conf_miss[D4PREFETCH+D4XWRITE][fc],
+				c->conf_miss[D4PREFETCH+D4XMISC][fc]);
 
 			printf(	"   PF compulsory fract	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f\n",
 				demand_comp_alltype / NONZERO(prefetch_alltype),
-				c->comp_miss[D4PREFETCH+D4XINSTRN] / NONZERO(c->miss[D4PREFETCH+D4XINSTRN]),
+				c->comp_miss[D4PREFETCH+D4XINSTRN][fc] / NONZERO(c->miss[D4PREFETCH+D4XINSTRN][fc]),
 				demand_comp_data / NONZERO(prefetch_data),
-				c->comp_miss[D4PREFETCH+D4XREAD] / NONZERO(c->miss[D4PREFETCH+D4XREAD]),
-				c->comp_miss[D4PREFETCH+D4XWRITE] / NONZERO(c->miss[D4PREFETCH+D4XWRITE]),
-				c->comp_miss[D4PREFETCH+D4XMISC] / NONZERO(c->miss[D4PREFETCH+D4XMISC]));
+				c->comp_miss[D4PREFETCH+D4XREAD][fc] / NONZERO(c->miss[D4PREFETCH+D4XREAD][fc]),
+				c->comp_miss[D4PREFETCH+D4XWRITE][fc] / NONZERO(c->miss[D4PREFETCH+D4XWRITE][fc]),
+				c->comp_miss[D4PREFETCH+D4XMISC][fc] / NONZERO(c->miss[D4PREFETCH+D4XMISC][fc]));
 
 			printf(	"   PF capacity fract	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f\n",
 				demand_cap_alltype / NONZERO(prefetch_alltype),
-				c->cap_miss[D4PREFETCH+D4XINSTRN] / NONZERO(c->miss[D4PREFETCH+D4XINSTRN]),
+				c->cap_miss[D4PREFETCH+D4XINSTRN][fc] / NONZERO(c->miss[D4PREFETCH+D4XINSTRN][fc]),
 				demand_cap_data / NONZERO(prefetch_data),
-				c->cap_miss[D4PREFETCH+D4XREAD] / NONZERO(c->miss[D4PREFETCH+D4XREAD]),
-				c->cap_miss[D4PREFETCH+D4XWRITE] / NONZERO(c->miss[D4PREFETCH+D4XWRITE]),
-				c->cap_miss[D4PREFETCH+D4XMISC] / NONZERO(c->miss[D4PREFETCH+D4XMISC]));
+				c->cap_miss[D4PREFETCH+D4XREAD][fc] / NONZERO(c->miss[D4PREFETCH+D4XREAD][fc]),
+				c->cap_miss[D4PREFETCH+D4XWRITE][fc] / NONZERO(c->miss[D4PREFETCH+D4XWRITE][fc]),
+				c->cap_miss[D4PREFETCH+D4XMISC][fc] / NONZERO(c->miss[D4PREFETCH+D4XMISC][fc]));
 
 			printf(	"   PF conflict fract	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f\n",
 				demand_conf_alltype / NONZERO(prefetch_alltype),
-				c->conf_miss[D4PREFETCH+D4XINSTRN] / NONZERO(c->miss[D4PREFETCH+D4XINSTRN]),
+				c->conf_miss[D4PREFETCH+D4XINSTRN][fc] / NONZERO(c->miss[D4PREFETCH+D4XINSTRN][fc]),
 				demand_conf_data / NONZERO(prefetch_data),
-				c->conf_miss[D4PREFETCH+D4XREAD] / NONZERO(c->miss[D4PREFETCH+D4XREAD]),
-				c->conf_miss[D4PREFETCH+D4XWRITE] / NONZERO(c->miss[D4PREFETCH+D4XWRITE]),
-				c->conf_miss[D4PREFETCH+D4XMISC] / NONZERO(c->miss[D4PREFETCH+D4XMISC]));
+				c->conf_miss[D4PREFETCH+D4XREAD][fc] / NONZERO(c->miss[D4PREFETCH+D4XREAD][fc]),
+				c->conf_miss[D4PREFETCH+D4XWRITE][fc] / NONZERO(c->miss[D4PREFETCH+D4XWRITE][fc]),
+				c->conf_miss[D4PREFETCH+D4XMISC][fc] / NONZERO(c->miss[D4PREFETCH+D4XMISC][fc]));
 		}
 
 		printf(	" Total Misses		%12.0f	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f\n",
 			demand_alltype + prefetch_alltype,
-			c->miss[D4XINSTRN] + c->miss[D4PREFETCH+D4XINSTRN],
+			c->miss[D4XINSTRN][fc] + c->miss[D4PREFETCH+D4XINSTRN][fc],
 			demand_data + prefetch_data,
-			c->miss[D4XREAD] + c->miss[D4PREFETCH+D4XREAD],
-			c->miss[D4XWRITE] + c->miss[D4PREFETCH+D4XWRITE],
-			c->miss[D4XMISC] + c->miss[D4PREFETCH+D4XMISC]);
+			c->miss[D4XREAD][fc] + c->miss[D4PREFETCH+D4XREAD][fc],
+			c->miss[D4XWRITE][fc] + c->miss[D4PREFETCH+D4XWRITE][fc],
+			c->miss[D4XMISC][fc] + c->miss[D4PREFETCH+D4XMISC][fc]);
 
 		printf(	"  Total miss rate	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f\n",
 			(demand_alltype + prefetch_alltype) / NONZERO(demand_fetch_alltype + prefetch_fetch_alltype),
-			(c->miss[D4XINSTRN] + c->miss[D4PREFETCH+D4XINSTRN]) / NONZERO(c->fetch[D4XINSTRN] + c->fetch[D4PREFETCH+D4XINSTRN]),
+			(c->miss[D4XINSTRN][fc] + c->miss[D4PREFETCH+D4XINSTRN][fc]) / NONZERO(c->fetch[D4XINSTRN][fc] + c->fetch[D4PREFETCH+D4XINSTRN][fc]),
 			(demand_data + prefetch_data) / NONZERO(demand_fetch_data + prefetch_fetch_data),
-			(c->miss[D4XREAD] + c->miss[D4PREFETCH+D4XREAD]) / NONZERO(c->fetch[D4XREAD] + c->fetch[D4PREFETCH+D4XREAD]),
-			(c->miss[D4XWRITE] + c->miss[D4PREFETCH+D4XWRITE]) / NONZERO(c->fetch[D4XWRITE] + c->fetch[D4PREFETCH+D4XWRITE]),
-			(c->miss[D4XMISC] + c->miss[D4PREFETCH+D4XMISC]) / NONZERO(c->fetch[D4XMISC] + c->fetch[D4PREFETCH+D4XMISC]));
+			(c->miss[D4XREAD][fc] + c->miss[D4PREFETCH+D4XREAD][fc]) / NONZERO(c->fetch[D4XREAD][fc] + c->fetch[D4PREFETCH+D4XREAD][fc]),
+			(c->miss[D4XWRITE][fc] + c->miss[D4PREFETCH+D4XWRITE][fc]) / NONZERO(c->fetch[D4XWRITE][fc] + c->fetch[D4PREFETCH+D4XWRITE][fc]),
+			(c->miss[D4XMISC][fc] + c->miss[D4PREFETCH+D4XMISC][fc]) / NONZERO(c->fetch[D4XMISC][fc] + c->fetch[D4PREFETCH+D4XMISC][fc]));
 
 	} /* End of prefetch misses. */
 	printf("\n");
@@ -1497,201 +1497,201 @@ do1stats (d4cache *c)
 	 * Print Block Miss Numbers
 	 */
 	if (c->lg2subblocksize != c->lg2blocksize) {
-		demand_data = c->blockmiss[D4XMISC] 
-			  + c->blockmiss[D4XREAD]
-		      	  + c->blockmiss[D4XWRITE];
+		demand_data = c->blockmiss[D4XMISC][fc] 
+			  + c->blockmiss[D4XREAD][fc]
+		      	  + c->blockmiss[D4XWRITE][fc];
 		demand_alltype = demand_data 
-			  + c->blockmiss[D4XINSTRN];
+			  + c->blockmiss[D4XINSTRN][fc];
 
 		printf(	" Demand Block Misses	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f\n",
 			demand_alltype,
-			c->blockmiss[D4XINSTRN],
+			c->blockmiss[D4XINSTRN][fc],
 			demand_data,
-			c->blockmiss[D4XREAD],
-			c->blockmiss[D4XWRITE],
-			c->blockmiss[D4XMISC]);
+			c->blockmiss[D4XREAD][fc],
+			c->blockmiss[D4XWRITE][fc],
+			c->blockmiss[D4XMISC][fc]);
 
 		printf(	"  DB miss rate		%12.4f	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f\n",
 			demand_alltype / NONZERO(demand_fetch_alltype),
-			c->blockmiss[D4XINSTRN] / NONZERO(c->fetch[D4XINSTRN]),
+			c->blockmiss[D4XINSTRN][fc] / NONZERO(c->fetch[D4XINSTRN][fc]),
 			demand_data / NONZERO(demand_fetch_data),
-			c->blockmiss[D4XREAD] / NONZERO(c->fetch[D4XREAD]),
-			c->blockmiss[D4XWRITE] / NONZERO(c->fetch[D4XWRITE]),
-			c->blockmiss[D4XMISC] / NONZERO(c->fetch[D4XMISC]));
+			c->blockmiss[D4XREAD][fc] / NONZERO(c->fetch[D4XREAD][fc]),
+			c->blockmiss[D4XWRITE][fc] / NONZERO(c->fetch[D4XWRITE][fc]),
+			c->blockmiss[D4XMISC][fc] / NONZERO(c->fetch[D4XMISC][fc]));
 
 		if (c->flags & D4F_CCC) {
-			demand_comp_data = c->comp_blockmiss[D4XMISC] 
-			  + c->comp_blockmiss[D4XREAD]
-		      	  + c->comp_blockmiss[D4XWRITE];
+			demand_comp_data = c->comp_blockmiss[D4XMISC][fc] 
+			  + c->comp_blockmiss[D4XREAD][fc]
+		      	  + c->comp_blockmiss[D4XWRITE][fc];
 			demand_comp_alltype = demand_comp_data 
-			  + c->comp_blockmiss[D4XINSTRN];
-			demand_cap_data = c->cap_blockmiss[D4XMISC] 
-			  + c->cap_blockmiss[D4XREAD]
-		      	  + c->cap_blockmiss[D4XWRITE];
+			  + c->comp_blockmiss[D4XINSTRN][fc];
+			demand_cap_data = c->cap_blockmiss[D4XMISC][fc] 
+			  + c->cap_blockmiss[D4XREAD][fc]
+		      	  + c->cap_blockmiss[D4XWRITE][fc];
 			demand_cap_alltype = demand_cap_data 
-			  + c->cap_blockmiss[D4XINSTRN];
-			demand_conf_data = c->conf_blockmiss[D4XMISC] 
-			  + c->conf_blockmiss[D4XREAD]
-		      	  + c->conf_blockmiss[D4XWRITE];
+			  + c->cap_blockmiss[D4XINSTRN][fc];
+			demand_conf_data = c->conf_blockmiss[D4XMISC][fc] 
+			  + c->conf_blockmiss[D4XREAD][fc]
+		      	  + c->conf_blockmiss[D4XWRITE][fc];
 			demand_conf_alltype = demand_conf_data 
-			  + c->conf_blockmiss[D4XINSTRN];
+			  + c->conf_blockmiss[D4XINSTRN][fc];
 
 			printf(	"   DB compulsory misses	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f\n",
 				demand_comp_alltype,
-				c->comp_blockmiss[D4XINSTRN],
+				c->comp_blockmiss[D4XINSTRN][fc],
 				demand_comp_data,
-				c->comp_blockmiss[D4XREAD],
-				c->comp_blockmiss[D4XWRITE],
-				c->comp_blockmiss[D4XMISC]);
+				c->comp_blockmiss[D4XREAD][fc],
+				c->comp_blockmiss[D4XWRITE][fc],
+				c->comp_blockmiss[D4XMISC][fc]);
 
 			printf(	"   DB capacity misses	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f\n",
 				demand_cap_alltype,
-				c->cap_blockmiss[D4XINSTRN],
+				c->cap_blockmiss[D4XINSTRN][fc],
 				demand_cap_data,
-				c->cap_blockmiss[D4XREAD],
-				c->cap_blockmiss[D4XWRITE],
-				c->cap_blockmiss[D4XMISC]);
+				c->cap_blockmiss[D4XREAD][fc],
+				c->cap_blockmiss[D4XWRITE][fc],
+				c->cap_blockmiss[D4XMISC][fc]);
 
 			printf(	"   DB conflict misses	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f\n",
 				demand_conf_alltype,
-				c->conf_blockmiss[D4XINSTRN],
+				c->conf_blockmiss[D4XINSTRN][fc],
 				demand_conf_data,
-				c->conf_blockmiss[D4XREAD],
-				c->conf_blockmiss[D4XWRITE],
-				c->conf_blockmiss[D4XMISC]);
+				c->conf_blockmiss[D4XREAD][fc],
+				c->conf_blockmiss[D4XWRITE][fc],
+				c->conf_blockmiss[D4XMISC][fc]);
 
 			printf(	"   DB compulsory fract	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f\n",
 				demand_comp_alltype / NONZERO(demand_alltype),
-				c->comp_blockmiss[D4XINSTRN] / NONZERO(c->blockmiss[D4XINSTRN]),
+				c->comp_blockmiss[D4XINSTRN][fc] / NONZERO(c->blockmiss[D4XINSTRN][fc]),
 				demand_comp_data / NONZERO(demand_data),
-				c->comp_blockmiss[D4XREAD] / NONZERO(c->blockmiss[D4XREAD]),
-				c->comp_blockmiss[D4XWRITE] / NONZERO(c->blockmiss[D4XWRITE]),
-				c->comp_blockmiss[D4XMISC]) / NONZERO(c->blockmiss[D4XMISC]);
+				c->comp_blockmiss[D4XREAD][fc] / NONZERO(c->blockmiss[D4XREAD][fc]),
+				c->comp_blockmiss[D4XWRITE][fc] / NONZERO(c->blockmiss[D4XWRITE][fc]),
+				c->comp_blockmiss[D4XMISC][fc] / NONZERO(c->blockmiss[D4XMISC][fc]));
 
 			printf(	"   DB capacity fract	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f\n",
 				demand_cap_alltype / NONZERO(demand_alltype),
-				c->cap_blockmiss[D4XINSTRN] / NONZERO(c->blockmiss[D4XINSTRN]),
+				c->cap_blockmiss[D4XINSTRN][fc] / NONZERO(c->blockmiss[D4XINSTRN][fc]),
 				demand_cap_data / NONZERO(demand_data),
-				c->cap_blockmiss[D4XREAD] / NONZERO(c->blockmiss[D4XREAD]),
-				c->cap_blockmiss[D4XWRITE] / NONZERO(c->blockmiss[D4XWRITE]),
-				c->cap_blockmiss[D4XMISC] / NONZERO(c->blockmiss[D4XMISC]));
+				c->cap_blockmiss[D4XREAD][fc] / NONZERO(c->blockmiss[D4XREAD][fc]),
+				c->cap_blockmiss[D4XWRITE][fc] / NONZERO(c->blockmiss[D4XWRITE][fc]),
+				c->cap_blockmiss[D4XMISC][fc] / NONZERO(c->blockmiss[D4XMISC][fc]));
 	    
 			printf(	"   DB conflict fract	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f\n",
 				demand_conf_alltype / NONZERO(demand_alltype),
-				c->conf_blockmiss[D4XINSTRN] / NONZERO(c->blockmiss[D4XINSTRN]),
+				c->conf_blockmiss[D4XINSTRN][fc] / NONZERO(c->blockmiss[D4XINSTRN][fc]),
 				demand_conf_data / NONZERO(demand_data),
-				c->conf_blockmiss[D4XREAD] / NONZERO(c->blockmiss[D4XREAD]),
-				c->conf_blockmiss[D4XWRITE] / NONZERO(c->blockmiss[D4XWRITE]),
-				c->conf_blockmiss[D4XMISC] / NONZERO(c->blockmiss[D4XMISC]));
+				c->conf_blockmiss[D4XREAD][fc] / NONZERO(c->blockmiss[D4XREAD][fc]),
+				c->conf_blockmiss[D4XWRITE][fc] / NONZERO(c->blockmiss[D4XWRITE][fc]),
+				c->conf_blockmiss[D4XMISC][fc] / NONZERO(c->blockmiss[D4XMISC][fc]));
 		}
 
 		/*
 		 * Prefetch block misses?
 		 */
 		if (c->prefetchf != d4prefetch_none) {
-			prefetch_data = c->blockmiss[D4PREFETCH+D4XMISC] 
-				  + c->blockmiss[D4PREFETCH+D4XREAD]
-		      		  + c->blockmiss[D4PREFETCH+D4XWRITE];
+			prefetch_data = c->blockmiss[D4PREFETCH+D4XMISC][fc] 
+				  + c->blockmiss[D4PREFETCH+D4XREAD][fc]
+		      		  + c->blockmiss[D4PREFETCH+D4XWRITE][fc];
 			prefetch_alltype = prefetch_data 
-				  + c->blockmiss[D4PREFETCH+D4XINSTRN];
+				  + c->blockmiss[D4PREFETCH+D4XINSTRN][fc];
 
 			printf(	" Prefetch Block Misses	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f\n",
 				prefetch_alltype,
-				c->blockmiss[D4PREFETCH+D4XINSTRN],
+				c->blockmiss[D4PREFETCH+D4XINSTRN][fc],
 				prefetch_data,
-				c->blockmiss[D4PREFETCH+D4XREAD],
-				c->blockmiss[D4PREFETCH+D4XWRITE],
-				c->blockmiss[D4PREFETCH+D4XMISC]);
+				c->blockmiss[D4PREFETCH+D4XREAD][fc],
+				c->blockmiss[D4PREFETCH+D4XWRITE][fc],
+				c->blockmiss[D4PREFETCH+D4XMISC][fc]);
 
 			printf(	"  PFB miss rate		%12.4f	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f\n",
 				prefetch_alltype / NONZERO(prefetch_fetch_alltype),
-				c->blockmiss[D4PREFETCH+D4XINSTRN] / NONZERO(c->fetch[D4PREFETCH+D4XINSTRN]),
+				c->blockmiss[D4PREFETCH+D4XINSTRN][fc] / NONZERO(c->fetch[D4PREFETCH+D4XINSTRN][fc]),
 				prefetch_data / NONZERO(prefetch_fetch_data),
-				c->blockmiss[D4PREFETCH+D4XREAD] / NONZERO(c->fetch[D4PREFETCH+D4XREAD]),
-				c->blockmiss[D4PREFETCH+D4XWRITE] / NONZERO(c->fetch[D4PREFETCH+D4XWRITE]),
-				c->blockmiss[D4PREFETCH+D4XMISC] / NONZERO(c->fetch[D4PREFETCH+D4XMISC]));
+				c->blockmiss[D4PREFETCH+D4XREAD][fc] / NONZERO(c->fetch[D4PREFETCH+D4XREAD][fc]),
+				c->blockmiss[D4PREFETCH+D4XWRITE][fc] / NONZERO(c->fetch[D4PREFETCH+D4XWRITE][fc]),
+				c->blockmiss[D4PREFETCH+D4XMISC][fc] / NONZERO(c->fetch[D4PREFETCH+D4XMISC][fc]));
 
 			if (c->flags & D4F_CCC) {
-				demand_comp_data = c->comp_blockmiss[D4PREFETCH+D4XMISC] 
-					+ c->comp_blockmiss[D4PREFETCH+D4XREAD]
-					+ c->comp_blockmiss[D4PREFETCH+D4XWRITE];
+				demand_comp_data = c->comp_blockmiss[D4PREFETCH+D4XMISC][fc] 
+					+ c->comp_blockmiss[D4PREFETCH+D4XREAD][fc]
+					+ c->comp_blockmiss[D4PREFETCH+D4XWRITE][fc];
 				demand_comp_alltype = demand_comp_data 
-					+ c->comp_blockmiss[D4PREFETCH+D4XINSTRN];
-				demand_cap_data = c->cap_blockmiss[D4PREFETCH+D4XMISC] 
-					+ c->cap_blockmiss[D4PREFETCH+D4XREAD]
-					+ c->cap_blockmiss[D4PREFETCH+D4XWRITE];
+					+ c->comp_blockmiss[D4PREFETCH+D4XINSTRN][fc];
+				demand_cap_data = c->cap_blockmiss[D4PREFETCH+D4XMISC][fc] 
+					+ c->cap_blockmiss[D4PREFETCH+D4XREAD][fc]
+					+ c->cap_blockmiss[D4PREFETCH+D4XWRITE][fc];
 				demand_cap_alltype = demand_cap_data 
-					+ c->cap_blockmiss[D4PREFETCH+D4XINSTRN];
-				demand_conf_data = c->conf_blockmiss[D4PREFETCH+D4XMISC] 
-					+ c->conf_blockmiss[D4PREFETCH+D4XREAD]
-					+ c->conf_blockmiss[D4PREFETCH+D4XWRITE];
+					+ c->cap_blockmiss[D4PREFETCH+D4XINSTRN][fc];
+				demand_conf_data = c->conf_blockmiss[D4PREFETCH+D4XMISC][fc] 
+					+ c->conf_blockmiss[D4PREFETCH+D4XREAD][fc]
+					+ c->conf_blockmiss[D4PREFETCH+D4XWRITE][fc];
 				demand_conf_alltype = demand_conf_data 
-					+ c->conf_blockmiss[D4PREFETCH+D4XINSTRN];
+					+ c->conf_blockmiss[D4PREFETCH+D4XINSTRN][fc];
 
 				printf(	"   PFB comp misses	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f\n",
 					demand_comp_alltype,
-					c->comp_blockmiss[D4PREFETCH+D4XINSTRN],
+					c->comp_blockmiss[D4PREFETCH+D4XINSTRN][fc],
 					demand_comp_data,
-					c->comp_blockmiss[D4PREFETCH+D4XREAD],
-					c->comp_blockmiss[D4PREFETCH+D4XWRITE],
-					c->comp_blockmiss[D4PREFETCH+D4XMISC]);
+					c->comp_blockmiss[D4PREFETCH+D4XREAD][fc],
+					c->comp_blockmiss[D4PREFETCH+D4XWRITE][fc],
+					c->comp_blockmiss[D4PREFETCH+D4XMISC][fc]);
 
 				printf(	"   PFB cap misses	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f\n",
 					demand_cap_alltype,
-					c->cap_blockmiss[D4PREFETCH+D4XINSTRN],
+					c->cap_blockmiss[D4PREFETCH+D4XINSTRN][fc],
 					demand_cap_data,
-					c->cap_blockmiss[D4PREFETCH+D4XREAD],
-					c->cap_blockmiss[D4PREFETCH+D4XWRITE],
-					c->cap_blockmiss[D4PREFETCH+D4XMISC]);
+					c->cap_blockmiss[D4PREFETCH+D4XREAD][fc],
+					c->cap_blockmiss[D4PREFETCH+D4XWRITE][fc],
+					c->cap_blockmiss[D4PREFETCH+D4XMISC][fc]);
 
 				printf(	"   PFB conf misses	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f\n",
 					demand_conf_alltype,
-					c->conf_blockmiss[D4PREFETCH+D4XINSTRN],
+					c->conf_blockmiss[D4PREFETCH+D4XINSTRN][fc],
 					demand_conf_data,
-					c->conf_blockmiss[D4PREFETCH+D4XREAD],
-					c->conf_blockmiss[D4PREFETCH+D4XWRITE],
-					c->conf_blockmiss[D4PREFETCH+D4XMISC]);
+					c->conf_blockmiss[D4PREFETCH+D4XREAD][fc],
+					c->conf_blockmiss[D4PREFETCH+D4XWRITE][fc],
+					c->conf_blockmiss[D4PREFETCH+D4XMISC][fc]);
 
 				printf(	"   PFB comp fract	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f\n",
 					demand_comp_alltype / NONZERO(prefetch_alltype),
-					c->comp_blockmiss[D4PREFETCH+D4XINSTRN] / NONZERO(c->blockmiss[D4PREFETCH+D4XINSTRN]),
+					c->comp_blockmiss[D4PREFETCH+D4XINSTRN][fc] / NONZERO(c->blockmiss[D4PREFETCH+D4XINSTRN][fc]),
 					demand_comp_data / NONZERO(prefetch_data),
-					c->comp_blockmiss[D4PREFETCH+D4XREAD] / NONZERO(c->blockmiss[D4PREFETCH+D4XREAD]),
-					c->comp_blockmiss[D4PREFETCH+D4XWRITE] / NONZERO(c->blockmiss[D4PREFETCH+D4XWRITE]),
-					c->comp_blockmiss[D4PREFETCH+D4XMISC] / NONZERO(c->blockmiss[D4PREFETCH+D4XMISC]));
+					c->comp_blockmiss[D4PREFETCH+D4XREAD][fc] / NONZERO(c->blockmiss[D4PREFETCH+D4XREAD][fc]),
+					c->comp_blockmiss[D4PREFETCH+D4XWRITE][fc] / NONZERO(c->blockmiss[D4PREFETCH+D4XWRITE][fc]),
+					c->comp_blockmiss[D4PREFETCH+D4XMISC][fc] / NONZERO(c->blockmiss[D4PREFETCH+D4XMISC][fc]));
 	    
 				printf(	"   PFB cap fract	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f\n",
 					demand_cap_alltype / NONZERO(prefetch_alltype),
-					c->cap_blockmiss[D4PREFETCH+D4XINSTRN] / NONZERO(c->blockmiss[D4PREFETCH+D4XINSTRN]),
+					c->cap_blockmiss[D4PREFETCH+D4XINSTRN][fc] / NONZERO(c->blockmiss[D4PREFETCH+D4XINSTRN][fc]),
 					demand_cap_data / NONZERO(prefetch_data),
-					c->cap_blockmiss[D4PREFETCH+D4XREAD] / NONZERO(c->blockmiss[D4PREFETCH+D4XREAD]),
-					c->cap_blockmiss[D4PREFETCH+D4XWRITE] / NONZERO(c->blockmiss[D4PREFETCH+D4XWRITE]),
-					c->cap_blockmiss[D4PREFETCH+D4XMISC] / NONZERO(c->blockmiss[D4PREFETCH+D4XMISC]));
+					c->cap_blockmiss[D4PREFETCH+D4XREAD][fc] / NONZERO(c->blockmiss[D4PREFETCH+D4XREAD][fc]),
+					c->cap_blockmiss[D4PREFETCH+D4XWRITE][fc] / NONZERO(c->blockmiss[D4PREFETCH+D4XWRITE][fc]),
+					c->cap_blockmiss[D4PREFETCH+D4XMISC][fc] / NONZERO(c->blockmiss[D4PREFETCH+D4XMISC][fc]));
 
 	    			printf(	"   PFB conf fract	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f\n",
 					demand_conf_alltype / NONZERO(prefetch_alltype),
-					c->conf_blockmiss[D4PREFETCH+D4XINSTRN] / NONZERO(c->blockmiss[D4PREFETCH+D4XINSTRN]),
+					c->conf_blockmiss[D4PREFETCH+D4XINSTRN][fc] / NONZERO(c->blockmiss[D4PREFETCH+D4XINSTRN][fc]),
 					demand_conf_data / NONZERO(prefetch_data),
-					c->conf_blockmiss[D4PREFETCH+D4XREAD] / NONZERO(c->blockmiss[D4PREFETCH+D4XREAD]),
-					c->conf_blockmiss[D4PREFETCH+D4XWRITE] / NONZERO(c->blockmiss[D4PREFETCH+D4XWRITE]),
-					c->conf_blockmiss[D4PREFETCH+D4XMISC] / NONZERO(c->blockmiss[D4PREFETCH+D4XMISC]));
+					c->conf_blockmiss[D4PREFETCH+D4XREAD][fc] / NONZERO(c->blockmiss[D4PREFETCH+D4XREAD][fc]),
+					c->conf_blockmiss[D4PREFETCH+D4XWRITE][fc] / NONZERO(c->blockmiss[D4PREFETCH+D4XWRITE][fc]),
+					c->conf_blockmiss[D4PREFETCH+D4XMISC][fc] / NONZERO(c->blockmiss[D4PREFETCH+D4XMISC][fc]));
 			}
 
 			printf(	" Total Block Misses	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f	%12.0f\n",
 				demand_alltype + prefetch_alltype,
-				c->blockmiss[D4XINSTRN] + c->blockmiss[D4PREFETCH+D4XINSTRN],
+				c->blockmiss[D4XINSTRN][fc] + c->blockmiss[D4PREFETCH+D4XINSTRN][fc],
 				demand_data + prefetch_data,
-				c->blockmiss[D4XREAD] + c->blockmiss[D4PREFETCH+D4XREAD],
-				c->blockmiss[D4XWRITE] + c->blockmiss[D4PREFETCH+D4XWRITE],
-				c->blockmiss[D4XMISC] + c->blockmiss[D4PREFETCH+D4XMISC]);
+				c->blockmiss[D4XREAD][fc] + c->blockmiss[D4PREFETCH+D4XREAD][fc],
+				c->blockmiss[D4XWRITE][fc] + c->blockmiss[D4PREFETCH+D4XWRITE][fc],
+				c->blockmiss[D4XMISC][fc] + c->blockmiss[D4PREFETCH+D4XMISC][fc]);
 
 			printf(	"  Tot blk miss rate	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f	%12.4f\n",
 				(demand_alltype + prefetch_alltype) / NONZERO(demand_fetch_alltype + prefetch_fetch_alltype),
-				(c->blockmiss[D4XINSTRN] + c->blockmiss[D4PREFETCH+D4XINSTRN]) / NONZERO(c->fetch[D4XINSTRN] + c->fetch[D4PREFETCH+D4XINSTRN]),
+				(c->blockmiss[D4XINSTRN][fc] + c->blockmiss[D4PREFETCH+D4XINSTRN][fc]) / NONZERO(c->fetch[D4XINSTRN][fc] + c->fetch[D4PREFETCH+D4XINSTRN][fc]),
 				(demand_data + prefetch_data) / NONZERO(demand_fetch_data + prefetch_fetch_data),
-				(c->blockmiss[D4XREAD] + c->blockmiss[D4PREFETCH+D4XREAD]) / NONZERO(c->fetch[D4XREAD] + c->fetch[D4PREFETCH+D4XREAD]),
-				(c->blockmiss[D4XWRITE] + c->blockmiss[D4PREFETCH+D4XWRITE]) / NONZERO(c->fetch[D4XWRITE] + c->fetch[D4PREFETCH+D4XWRITE]),
-				(c->blockmiss[D4XMISC] + c->blockmiss[D4PREFETCH+D4XMISC]) / NONZERO(c->fetch[D4XMISC] + c->fetch[D4PREFETCH+D4XMISC]));
+				(c->blockmiss[D4XREAD][fc] + c->blockmiss[D4PREFETCH+D4XREAD][fc]) / NONZERO(c->fetch[D4XREAD][fc] + c->fetch[D4PREFETCH+D4XREAD][fc]),
+				(c->blockmiss[D4XWRITE][fc] + c->blockmiss[D4PREFETCH+D4XWRITE][fc]) / NONZERO(c->fetch[D4XWRITE][fc] + c->fetch[D4PREFETCH+D4XWRITE][fc]),
+				(c->blockmiss[D4XMISC][fc] + c->blockmiss[D4PREFETCH+D4XMISC][fc]) / NONZERO(c->fetch[D4XMISC][fc] + c->fetch[D4PREFETCH+D4XMISC][fc]));
 		} /* End of prefetch block misses */
 		printf("\n");
 	} /* End of block misses */
@@ -1703,19 +1703,19 @@ do1stats (d4cache *c)
 	 * Report multiblock and traffic to/from memory
 	 */
 	printf( " Multi-block refs      %12.0f\n",
-		c->multiblock);
+		c->multiblock[fc]);
 	printf(	" Bytes From Memory	%12.0f\n",
-		c->bytes_read);
+		c->bytes_read[fc]);
 	printf(	" ( / Demand Fetches)	%12.4f\n",
-		c->bytes_read / NONZERO(demand_fetch_alltype));
+		c->bytes_read[fc] / NONZERO(demand_fetch_alltype));
 	printf(	" Bytes To Memory	%12.0f\n",
-		c->bytes_written);
+		c->bytes_written[fc]);
 	printf(	" ( / Demand Writes)	%12.4f\n",
-		c->bytes_written / NONZERO(c->fetch[D4XWRITE]));
+		c->bytes_written[fc] / NONZERO(c->fetch[D4XWRITE][fc]));
 	printf(	" Total Bytes r/w Mem	%12.0f\n",
-		c->bytes_read + c->bytes_written);
+		c->bytes_read[fc] + c->bytes_written[fc]);
 	printf(	" ( / Demand Fetches)	%12.4f\n",
-		(c->bytes_read + c->bytes_written) / NONZERO(demand_fetch_alltype));
+		(c->bytes_read[fc] + c->bytes_written[fc]) / NONZERO(demand_fetch_alltype));
 	printf("\n");
 }
 
@@ -1959,8 +1959,7 @@ int
 main (int argc, char **argv)
 {
 	d4cache *ci, *cd;
-	double tmaxcount = 0, tintcount;
-	double flcount;
+
 //Kishore
 	struct stat s;
         int status;
@@ -2027,13 +2026,15 @@ main (int argc, char **argv)
 	//abhinava
 
 	printf ("\n---Simulation begins.\n");
-	tintcount = stat_interval;
-	flcount = flushcount;
+
         
 #pragma omp parallel for 
-for(fc =0; fc<NUM_PROC;fc++) {
-
-d4memref r;
+	for(fc =0; fc<NUM_PROC;fc++) {
+	   double tmaxcount = 0, tintcount;
+	   double flcount;
+	   tintcount = stat_interval;
+	   flcount = flushcount;
+	   d4memref r;
 	   while (1) {
 	   	r = next_trace_item(fc);
 	   	if (r.accesstype == D4TRACE_END)
@@ -2043,13 +2044,13 @@ d4memref r;
 	   		break;
 	   	}
 	   	switch (r.accesstype) {
-	   	case D4XINSTRN:	  d4ref (ci, r);  break;
-	   	case D4XINVAL:	  d4ref (ci, r);  /* fall through */
-	   	default:	  d4ref (cd, r);  break;
+	   	case D4XINSTRN:	  d4ref (ci, r, fc);  break;
+	   	case D4XINVAL:	  d4ref (ci, r, fc);  /* fall through */
+	   	default:	  d4ref (cd, r, fc);  break;
 	   	}
 	   	tmaxcount += 1;
 	   	if (tintcount > 0 && (tintcount -= 1) <= 0) {
-	   		dostats();
+	   		dostats(fc);
 	   		tintcount = stat_interval;
 	   	}
 	   	if (flcount > 0 && (flcount -= 1) <= 0) {
@@ -2057,11 +2058,11 @@ d4memref r;
 	   		r.accesstype = D4XCOPYB;
 	   		r.address = 0;
 	   		r.size = 0;
-	   		d4ref (cd, r);
+	   		d4ref (cd, r, fc);
 	   		r.accesstype = D4XINVAL;
-	   		d4ref (ci, r);
+	   		d4ref (ci, r, fc);
 	   		if (ci != cd)
-	   			d4ref (cd, r);
+	   			d4ref (cd, r, fc);
 	   		flcount = flushcount;
 	   	}
 	   }
@@ -2070,7 +2071,7 @@ d4memref r;
 		r.accesstype = D4XCOPYB;
 		r.address = 0;
 		r.size = 0;
-		d4ref (cd, r);
+		d4ref (cd, r, fc);
 		printf("End of trace %d\n",fc);
 	}
 	//abhinava
@@ -2080,7 +2081,7 @@ d4memref r;
 	//abhinava
 	
 	printf ("---Simulation complete.\n");
-	dostats();
+	for(fc =0; fc<NUM_PROC;fc++) {dostats(fc);}
 	printf ("---Execution complete.\n");
 	return 0;
 }

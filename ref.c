@@ -156,9 +156,9 @@ int d4wback_nofetch (d4cache *c, d4memref m, int setnumber, d4stacknode *ptr, in
  * will appear multiple times, renamed to something else each time.
  */
 #undef d4ref /* defeat the macro from d4.h, which users normally invoke */
-extern void d4ref (d4cache *, d4memref); /* prototype to avoid compiler warnings */
+extern void d4ref (d4cache *, d4memref, int); /* prototype to avoid compiler warnings */
 void
-d4ref (d4cache *c, d4memref m)
+d4ref (d4cache *c, d4memref m, int fc)
 {
 	extern int d4_ncustom;
 	extern void (*d4_custom[]) (d4cache *, d4memref);
@@ -580,7 +580,7 @@ d4infcache (d4cache *c, d4memref m)
  */
 D4_INLINE
 d4memref
-d4_splitm (d4cache *c, d4memref mr, d4addr ba)
+d4_splitm (d4cache *c, d4memref mr, d4addr ba, int fc)
 {
 	const int bsize = 1 << D4VAL (c, lg2blocksize);
 	const int bmask = bsize - 1;
@@ -589,15 +589,18 @@ d4_splitm (d4cache *c, d4memref mr, d4addr ba)
 
 	if (ba == D4ADDR2BLOCK (c, mr.address + mr.size - 1))
 		return mr;
-	pf = d4get_mref();
-        pf->m.address = ba + bsize;
-        pf->m.accesstype = mr.accesstype | D4_MULTIBLOCK;
-	newsize = bsize - (mr.address&bmask);
-        pf->m.size = mr.size - newsize;
-	pf->next = c->pending;
-	c->pending = pf;
-	c->multiblock++;
-	mr.size = newsize;
+	#pragma omp critical (P)
+       {
+        	pf = d4get_mref();
+                pf->m.address = ba + bsize;
+                pf->m.accesstype = mr.accesstype | D4_MULTIBLOCK;
+        	newsize = bsize - (mr.address&bmask);
+                pf->m.size = mr.size - newsize;
+        	pf->next = c->pending;
+        	c->pending = pf;
+        	c->multiblock[fc]++;
+        	mr.size = newsize;
+        }
 	return mr;
 }
 
@@ -607,22 +610,28 @@ d4_splitm (d4cache *c, d4memref mr, d4addr ba)
  * The user calls this function for the cache closest to
  * the processor; other caches are handled automatically.
  */
+
 void
-d4ref (d4cache *c, d4memref mr)
+d4ref (d4cache *c, d4memref mr, int fc)
 {
     /* special cases first */
     if ((D4VAL (c, flags) & D4F_MEM) != 0) /* Special case for simulated memory */
-	c->fetch[(int)mr.accesstype]++;
+	c->fetch[(int)mr.accesstype][fc]++;
     else if (mr.accesstype == D4XCOPYB || mr.accesstype == D4XINVAL) {
 	d4memref m = mr;	/* dumb compilers might de-optimize if we take addr of mr */
-	if (m.accesstype == D4XCOPYB)
-		d4copyback (c, &m, 1);
-	else
-		d4invalidate (c, &m, 1);
+	if (m.accesstype == D4XCOPYB){
+	#pragma omp critical (P)
+		d4copyback (c, &m, 1,fc);
+             
+	}
+	else{
+	#pragma omp critical (P)
+		d4invalidate (c, &m, 1,fc);
+        }
     }
     else {				 /* Everything else */
 	const d4addr blockaddr = D4ADDR2BLOCK (c, mr.address);
-	const d4memref m = d4_splitm (c, mr, blockaddr);
+	const d4memref m = d4_splitm (c, mr, blockaddr,fc);
 	const int atype = D4BASIC_ATYPE (m.accesstype);
 	const int setnumber = D4ADDR2SET (c, m.address);
 	const int ronly = D4CUSTOM && (D4VAL (c, flags) & D4F_RO) != 0; /* conservative */
@@ -657,6 +666,8 @@ d4ref (d4cache *c, d4memref mr)
 	 * writes, misc, and prefetch references.
 	 * Optionally, some percentage may be thrown away.
 	 */
+
+	#pragma omp critical (P)
 	if ((!D4CUSTOM || !D4_OPT (prefetch_none)) &&
 	    (m.accesstype == D4XREAD || m.accesstype == D4XINSTRN)) {
 		d4pendstack *pf = D4VAL (c, prefetchf) (c, m, miss, ptr);
@@ -728,12 +739,16 @@ d4ref (d4cache *c, d4memref mr)
 	 * In some cases, a write can generate two downstream references:
 	 * a fetch to load the complete subblock and a write-through store.
 	 */
+
+	#pragma omp critical (P)
 	if (!ronly && atype == D4XWRITE && !wback) {
 		d4pendstack *newm = d4get_mref();
 		newm->m = m; 
 		newm->next = c->pending;
 		c->pending = newm;
 	}
+
+	#pragma omp critical (P)
 	if (miss && (ronly || atype != D4XWRITE ||
 		     (walloc && m.size != D4REFNSB (c, m) << D4VAL (c, lg2subblocksize)))) {
 		d4pendstack *newm = d4get_mref();
@@ -778,21 +793,21 @@ d4ref (d4cache *c, d4memref mr)
 		if (miss) {
 			int infmiss = 0; /* assume hit in infinite cache */
 			if (!fullmiss) /* hit in fully assoc: conflict miss */
-				c->conf_miss[(int)m.accesstype]++;
+				c->conf_miss[(int)m.accesstype][fc]++;
 			else {
 				infmiss = d4infcache (c, m);
 				if (infmiss != 0) /* first miss: compulsory */
-					c->comp_miss[(int)m.accesstype]++;
+					c->comp_miss[(int)m.accesstype][fc]++;
 				else	/* hit in infinite cache: capacity miss */
-					c->cap_miss[(int)m.accesstype]++;
+					c->cap_miss[(int)m.accesstype][fc]++;
 			}
 			if (blockmiss) {
 				if (!fullblockmiss) /* block hit in full assoc */
-					c->conf_blockmiss[(int)m.accesstype]++;
+					c->conf_blockmiss[(int)m.accesstype][fc]++;
 				else if (infmiss == 1) /* block miss in full and inf */
-					c->comp_blockmiss[(int)m.accesstype]++;
+					c->comp_blockmiss[(int)m.accesstype][fc]++;
 				else /* part of block hit in infinite cache */
-					c->cap_blockmiss[(int)m.accesstype]++;
+					c->cap_blockmiss[(int)m.accesstype][fc]++;
 			}
 		}
 
@@ -810,18 +825,19 @@ d4ref (d4cache *c, d4memref mr)
 	/*
 	 * Update non-ccc metrics. 
 	 */
-	c->fetch[(int)m.accesstype]++;
+	c->fetch[(int)m.accesstype][fc]++;
 	if (miss) {
-		c->miss[(int)m.accesstype]++;
+		c->miss[(int)m.accesstype][fc]++;
 		if (blockmiss)
-			c->blockmiss[(int)m.accesstype]++;
+			c->blockmiss[(int)m.accesstype][fc]++;
 	}
 
 	/*
 	 * Now make recursive calls for pending references
 	 */
+	#pragma omp critical (P)
 	if (c->pending)
-		d4_dopending (c, c->pending);
+		d4_dopending (c, c->pending, fc);
     }
 }
 

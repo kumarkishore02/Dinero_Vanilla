@@ -43,7 +43,6 @@
  * $Header: /home/edler/dinero/d4/RCS/tracein.h,v 1.4 1997/12/08 19:35:24 edler Exp $
  */
 
-#define NUM_PROC  16
 /* One of the following functions is called to generate each trace record */
 extern d4memref tracein_xdin (void);
 extern d4memref tracein_din (int);

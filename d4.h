@@ -65,7 +65,9 @@
 #endif
 typedef D4ADDR d4addr;
 
-
+//kishore
+#define NUM_PROC  16 
+//kishore
 
 
 	/*
@@ -198,6 +200,7 @@ typedef struct {
 	 * full specification of a cache
 	 */
 typedef struct d4_cache_struct {
+//These need not be made private
 	char *name;		/* mostly for printing */
 	int cacheid;		/* unique for each cache */
 	int flags;
@@ -223,7 +226,8 @@ typedef struct d4_cache_struct {
 	 */
 	struct d4_cache_struct *downstream;
 	void (*ref)(struct d4_cache_struct *, d4memref);	/* d4ref or custom version */
-
+//Above things need not be private or critical
+//
 	/*
 	 * Cache policy functions and data:
 	 *	replacement, prefetch, write-alloc, write-back
@@ -267,19 +271,19 @@ typedef struct d4_cache_struct {
 	 * Index is accesstype + 0 or
 	 *          accesstype + D4PREFETCH for prefetch
 	 */
-	double fetch	      [2 * D4NUMACCESSTYPES];
-	double miss	      [2 * D4NUMACCESSTYPES];
-	double blockmiss      [2 * D4NUMACCESSTYPES];
-	double comp_miss      [2 * D4NUMACCESSTYPES];	/* compulsory misses */
-	double comp_blockmiss [2 * D4NUMACCESSTYPES];
-	double cap_miss	      [2 * D4NUMACCESSTYPES];	/* capacity misses */
-	double cap_blockmiss  [2 * D4NUMACCESSTYPES];
-	double conf_miss      [2 * D4NUMACCESSTYPES];	/* conflict misses */
-	double conf_blockmiss [2 * D4NUMACCESSTYPES];
+	double fetch	      [2 * D4NUMACCESSTYPES][NUM_PROC];
+	double miss	      [2 * D4NUMACCESSTYPES][NUM_PROC];
+	double blockmiss      [2 * D4NUMACCESSTYPES][NUM_PROC];
+	double comp_miss      [2 * D4NUMACCESSTYPES][NUM_PROC];	/* compulsory misses */
+	double comp_blockmiss [2 * D4NUMACCESSTYPES][NUM_PROC];
+	double cap_miss	      [2 * D4NUMACCESSTYPES][NUM_PROC];	/* capacity misses */
+	double cap_blockmiss  [2 * D4NUMACCESSTYPES][NUM_PROC];
+	double conf_miss      [2 * D4NUMACCESSTYPES][NUM_PROC];	/* conflict misses */
+	double conf_blockmiss [2 * D4NUMACCESSTYPES][NUM_PROC];
 
-	double multiblock;
-	double bytes_read;
-	double bytes_written;
+	double multiblock[NUM_PROC];
+	double bytes_read[NUM_PROC];
+	double bytes_written[NUM_PROC];
 } d4cache;
 
 /* flags for d4cache */
@@ -401,10 +405,10 @@ extern int	d4setup (void);
 #if D4CUSTOM && !defined(d4ref)
 #define		d4ref(c,m) (*(c)->ref)(c,m) /* call customized version */
 #else
-void		d4ref (d4cache *, d4memref); /* call generic version */
+void		d4ref (d4cache *, d4memref, int); /* call generic version */
 #endif
-void		d4copyback (d4cache *, const d4memref *, int);
-void		d4invalidate (d4cache *, const d4memref *, int);
+void		d4copyback (d4cache *, const d4memref *, int, int);
+void		d4invalidate (d4cache *, const d4memref *, int, int);
 void		d4customize (FILE *);
 
 /* replacement policies */
@@ -470,8 +474,8 @@ extern void d4hash (d4cache *, int stacknum, d4stacknode *);
  * Global declarations for internal Dinero IV use.
  */
 extern int d4_infcache (d4cache *, d4memref);
-extern d4memref d4_splitm (d4cache *, d4memref, d4addr);
-extern void d4_dopending (d4cache *, d4pendstack *);
+extern d4memref d4_splitm (d4cache *, d4memref, d4addr, int);
+extern void d4_dopending (d4cache *, d4pendstack *, int);
 extern void d4_unhash (d4cache *c, int stacknum, d4stacknode *);
 extern d4stacknode *d4_find (d4cache *, int stacknum, d4addr blockaddr);
 extern void d4_wbblock (d4cache *, d4stacknode *, const int);
