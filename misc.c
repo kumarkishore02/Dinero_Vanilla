@@ -689,8 +689,11 @@ d4_wbblock (d4cache *c, d4stacknode *ptr, const int lg2sbsize)
 			dbits &= ~b;
 		}
 		newm->m.size = a - newm->m.address;
+	#pragma omp critical (P)
+	  {
 		newm->next = c->pending;
 		c->pending = newm;
+          }
 	} while (dbits != 0);
 	ptr->dirty = 0;
 }
@@ -738,8 +741,11 @@ d4copyback (d4cache *c, const d4memref *m, int prop, int fc)
 			newm->m.address = 0;
 			newm->m.size = 0;	/* affect the whole cache */
 		}
+	#pragma omp critical (P)
+          {
 		newm->next = c->pending;
 		c->pending = newm;
+          }
 	}
 	if (m != NULL && m->size > 0) {		/* copy back just 1 block */
 		ptr = d4_find (c, D4ADDR2SET (c, m->address), D4ADDR2BLOCK (c, m->address));
@@ -753,8 +759,11 @@ d4copyback (d4cache *c, const d4memref *m, int prop, int fc)
 			if ((ptr->dirty & ptr->valid) != 0)
 				d4_wbblock (c, ptr, c->lg2subblocksize);
 	}
-	if ((newm = c->pending) != NULL)
+ 	#pragma omp critical (P)
+	{
+	  if ((newm = c->pending) != NULL)
 		d4_dopending (c, newm, fc);
+ 	}
 }
 
 
@@ -789,8 +798,11 @@ d4invalidate (d4cache *c, const d4memref *m, int prop, int fc)
 			newm->m.address = 0;
 			newm->m.size = 0;	/* affect the whole cache */
 		}
-		newm->next = c->pending;
+ 	#pragma omp critical (P)
+	 {	
+	        newm->next = c->pending;
 		c->pending = newm;
+ 	 }
 	}
 	if (m != NULL && m->size > 0) {		/* invalidate just one block */
 		d4addr blockaddr = D4ADDR2BLOCK (c, m->address);
@@ -813,8 +825,11 @@ d4invalidate (d4cache *c, const d4memref *m, int prop, int fc)
 	}
 	if ((c->flags & D4F_CCC) != 0)
 		d4_invinfcache (c, m);
-	if ((newm = c->pending) != NULL)
+ 	#pragma omp critical (P)
+	 {	
+		if ((newm = c->pending) != NULL)
 		d4_dopending (c, newm, fc);
+ 	 } 
 }
 
 

@@ -589,18 +589,20 @@ d4_splitm (d4cache *c, d4memref mr, d4addr ba, int fc)
 
 	if (ba == D4ADDR2BLOCK (c, mr.address + mr.size - 1))
 		return mr;
-	#pragma omp critical (P)
-       {
+
         	pf = d4get_mref();
                 pf->m.address = ba + bsize;
                 pf->m.accesstype = mr.accesstype | D4_MULTIBLOCK;
         	newsize = bsize - (mr.address&bmask);
                 pf->m.size = mr.size - newsize;
+	#pragma omp critical (P)
+	  {
         	pf->next = c->pending;
         	c->pending = pf;
+          }
         	c->multiblock[fc]++;
-        	mr.size = newsize;
-        }
+		mr.size = newsize;
+        
 	return mr;
 }
 
@@ -620,12 +622,12 @@ d4ref (d4cache *c, d4memref mr, int fc)
     else if (mr.accesstype == D4XCOPYB || mr.accesstype == D4XINVAL) {
 	d4memref m = mr;	/* dumb compilers might de-optimize if we take addr of mr */
 	if (m.accesstype == D4XCOPYB){
-	#pragma omp critical (P)
+//	#pragma omp critical (P)
 		d4copyback (c, &m, 1,fc);
              
 	}
 	else{
-	#pragma omp critical (P)
+//	#pragma omp critical (P)
 		d4invalidate (c, &m, 1,fc);
         }
     }
@@ -667,17 +669,19 @@ d4ref (d4cache *c, d4memref mr, int fc)
 	 * Optionally, some percentage may be thrown away.
 	 */
 
-	#pragma omp critical (P)
+
 	if ((!D4CUSTOM || !D4_OPT (prefetch_none)) &&
 	    (m.accesstype == D4XREAD || m.accesstype == D4XINSTRN)) {
 		d4pendstack *pf = D4VAL (c, prefetchf) (c, m, miss, ptr);
-		if (pf != NULL) {
+        #pragma omp critical (P)
+	if (pf != NULL) {
 			/* Note: 0 <= random() <= 2^31-1 and 0 <= random()/(INT_MAX/100) < 100. */
-			if (D4VAL (c, prefetch_abortpercent) > 0 &&
-			    random()/(INT_MAX/100) < D4VAL (c, prefetch_abortpercent))
+			if (D4VAL (c, prefetch_abortpercent) > 0 && random()/(INT_MAX/100) < D4VAL (c, prefetch_abortpercent)){
+			 //may have to put this above if
 				d4put_mref (pf);	/* throw it away */
+			}
 			else {
-				pf->next = c->pending;	/* add to pending list */
+  				pf->next = c->pending;	/* add to pending list */
 				c->pending = pf;
 			}
 		}
