@@ -2001,7 +2001,7 @@ main (int argc, char **argv)
        int fc;
         char file_name[NUM_PROC][100];// = {"../../vlads_scripts/traces/cc1.din",};	
         for(fc=0; fc<NUM_PROC; fc++){
-	   sprintf(file_name[fc], "../../vlads_scripts/split_traces/cc1/cc1_%d.din", fc);
+	   sprintf(file_name[fc], "../../cc1/cc1_%d.din", fc);
  	   //printf("file=%s\n", file_name[fc]);
  	}
          
@@ -2020,6 +2020,9 @@ main (int argc, char **argv)
 //kishore
 
 	//abhinava
+	
+   	int num_of_threads = omp_get_max_threads();
+   	omp_set_num_threads(4);
         struct timeval begin,end;
       	double time_elapsed = 0.0f;
 	gettimeofday(&begin, NULL);	

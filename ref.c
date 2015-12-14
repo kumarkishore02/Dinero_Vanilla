@@ -836,8 +836,9 @@ d4ref (d4cache *c, d4memref mr, int fc)
 	 * Now make recursive calls for pending references
 	 */
 	#pragma omp critical (P)
-	if (c->pending)
+	if (c->pending){
 		d4_dopending (c, c->pending, fc);
+	}
     }
 }
 
