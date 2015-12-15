@@ -97,7 +97,7 @@ extern d4memref next_trace_item (int);
 
 //kishore
 int trace_file[NUM_PROC];
-char *mmaped_trace[NUM_PROC];
+mmap_struct mMap[NUM_PROC];
 //kishore
 
 #if !D4CUSTOM
@@ -2014,8 +2014,8 @@ main (int argc, char **argv)
 	        check (status < 0, "stat %s failed: %s", file_name, strerror (errno));
 	        size = s.st_size;
 	//	printf("Size %u\n",size);
-	        mmaped_trace[fc] = mmap (0, size, PROT_READ, MAP_SHARED, trace_file[fc], 0);
-		check (mmaped_trace[fc] == MAP_FAILED, "mmap %s failed: %s",file_name[fc], strerror (errno));
+	        mMap[fc].mmaped_trace = mmap (0, size, PROT_READ, MAP_SHARED, trace_file[fc], 0);
+		check (mMap[fc].mmaped_trace == MAP_FAILED, "mmap %s failed: %s",file_name[fc], strerror (errno));
         }
 
 //kishore
@@ -2041,7 +2041,7 @@ int cnt[NUM_PROC] = {0};
 	   d4memref r;
 	   while (1) {
 	   	r = next_trace_item(fc);
-		printf("sub-set: %d, count: %d\n",fc,cnt[fc]++);
+	//	printf("sub-set: %d, count: %d\n",fc,cnt[fc]++);
 	   	if (r.accesstype == D4TRACE_END)
 	   		goto done;
 	   	if (maxcount != 0 && tmaxcount >= maxcount) {

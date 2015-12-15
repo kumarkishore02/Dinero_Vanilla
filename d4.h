@@ -81,8 +81,11 @@ typedef struct {
 	unsigned short	size;		/* of memory referenced, in bytes */
 } d4memref;
 
-
-
+typedef  struct 
+{
+char *mmaped_trace;
+char dummy[60];
+} mmap_struct;
 
 	/* Node for a stack of pending memrefs per cache */
 typedef struct d4_pendstack {

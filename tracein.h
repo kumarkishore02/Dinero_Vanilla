@@ -60,7 +60,7 @@ extern d4memref (*input_function) (int);
 extern int informat;
 //kishore
 extern int trace_file[NUM_PROC];
-extern char *mmaped_trace[NUM_PROC];
+ extern mmap_struct mMap[NUM_PROC];
 
 /* check that a recognized input format has been specified */
 extern void verify_trace_format (void);

@@ -89,7 +89,7 @@ tracein_din(int fc)
 	/* skip initial whitespace */
 	do {
 //		c = getchar(); 
-		c = *(mmaped_trace[fc]++);
+		c = *(mMap[fc].mmaped_trace++);
 
 	} while (c == ' ' || c == '\t');
 	if (c == '$') {
@@ -106,13 +106,13 @@ tracein_din(int fc)
 		die (badlabel, tcount, c);
 	atype = c - (isdigit(c) ? '0' : ((islower(c) ? 'a' : 'A') - 10));
 //	c = getchar(); 
-	c = *(mmaped_trace[fc]++);
+	c = *(mMap[fc].mmaped_trace++);
 
 
 	if (c != ' ' && c != '\t') {	/* rarely get rest of label */
 		if ((c == 'x' || c == 'X') && atype == 0)
 //			c = getchar(); 
-			c = *(mmaped_trace[fc]++);
+			c = *(mMap[fc].mmaped_trace++);
 
 	/* ignore leading 0x or 0X */
 		if (c == '\n' || c == '$')
@@ -121,7 +121,7 @@ tracein_din(int fc)
 			atype *= 16;
 			atype += c - (isdigit(c) ? '0' : ((islower(c) ? 'a' : 'A') - 10));
 //			c = getchar(); 
-			c = *(mmaped_trace[fc]++);
+			c = *(mMap[fc].mmaped_trace++);
 
 
 		}
@@ -134,7 +134,7 @@ tracein_din(int fc)
 	/* skip whitespace between label and address */
 	do {
 //		c = getchar(); 
-		c = *(mmaped_trace[fc]++);
+		c = *(mMap[fc].mmaped_trace++);
 
 
 	} while (c == ' ' || c == '\t');
@@ -146,19 +146,19 @@ tracein_din(int fc)
 		die (badaddr, tcount, c);
 	addr = c - (isdigit(c) ? '0' : ((islower(c) ? 'a' : 'A') - 10));
 //	c = getchar(); 
-	c = *(mmaped_trace[fc]++);
+	c = *(mMap[fc].mmaped_trace++);
 
  
 	if ((c == 'x' || c == 'X') && addr == 0)
 //		c = getchar(); 
-		c = *(mmaped_trace[fc]++);
+		c = *(mMap[fc].mmaped_trace++);
 
 	/* ignore leading 0x or 0X */
 	while (isxdigit(c)) {
 		addr *= 16;
 		addr += c - (isdigit(c) ? '0' : ((islower(c) ? 'a' : 'A') - 10));
 //		c = getchar(); 
-		c = *(mmaped_trace[fc]++);
+		c = *(mMap[fc].mmaped_trace++);
 
 
 	}
@@ -168,7 +168,7 @@ tracein_din(int fc)
 	/* skip rest of line */
 	while (c != '\n' && c != '$')
 //		c = getchar(); 
-		c = *(mmaped_trace[fc]++);
+		c = *(mMap[fc].mmaped_trace++);
 
 
 	r.accesstype = atype;
