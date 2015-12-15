@@ -80,7 +80,7 @@
 #include <string.h>
 #include <assert.h>
 #include "d4.h"
-
+#include "omp.h"
 
 /* some systems don't provide a proper declaration for random() */
 #ifdef D4_RANDOM_DEF

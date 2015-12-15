@@ -49,7 +49,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include "d4.h"
-
+#include "omp.h"
 
 /*
  * Global variable definitions
@@ -572,8 +572,11 @@ d4hash (d4cache *c, int stacknum, d4stacknode *s)
 	int buck = D4HASH (s->blockaddr, stacknum, s->cachep->cacheid);
 
 	assert (c->stack[stacknum].n > D4HASH_THRESH);
+#pragma omp critical(S)
+	{
 	s->bucket = d4stackhash.table[buck];
 	d4stackhash.table[buck] = s;
+	}
 }
 
 
@@ -585,6 +588,7 @@ d4_unhash (d4cache *c, int stacknum, d4stacknode *s)
 	d4stacknode *p = d4stackhash.table[buck];
 
 	assert (c->stack[stacknum].n > D4HASH_THRESH);
+#pragma omp critical(S)
 	if (p == s)
 		d4stackhash.table[buck] = s->bucket;
 	else {
@@ -605,6 +609,7 @@ d4get_mref()
 
 	m = d4pendfree;
 	if (m != NULL) {
+	#pragma omp critical(PF)
 		d4pendfree = m->next;
 		return m;
 	}
@@ -621,8 +626,12 @@ d4get_mref()
 void
 d4put_mref (d4pendstack *m)
 {
+
+#pragma omp critical(PF)
+	{
 	m->next = d4pendfree;
 	d4pendfree = m;
+	}
 }
 
 

@@ -1,5 +1,2 @@
-perl -pi -e "s/cmdmain\.c/cmdmain_parallel.c/g"  Makefile
-perl -pi -e "s/cmdmain\.o/cmdmain_parallel.o/g"  Makefile
-perl -pi -e "s/cmdmain\.c/cmdmain_parallel.c/g"  Makefile.in
-perl -pi -e "s/cmdmain\.o/cmdmain_parallel.o/g"  Makefile.in
-
+perl -pi -e "s/-Wpointer-arith -Wmissing-prototypes/-Wpointer-arith -fopenmp -Wmissing-prototypes/"  Makefile
+perl -pi -e "s,//omp_set_num_threads,	omp_set_num_threads," cmdmain_parallel.c

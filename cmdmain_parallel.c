@@ -2001,6 +2001,7 @@ main (int argc, char **argv)
        int fc;
         char file_name[NUM_PROC][100];// = {"../../vlads_scripts/traces/cc1.din",};	
         for(fc=0; fc<NUM_PROC; fc++){
+	   //sprintf(file_name[fc], "../../cc1/cc1_%d.din", fc);
 	   sprintf(file_name[fc], "../../vlads_scripts/split_traces/cc1/cc1_%d.din", fc);
  	   //printf("file=%s\n", file_name[fc]);
  	}
@@ -2021,8 +2022,8 @@ main (int argc, char **argv)
 
 	//abhinava
 	
-   	int num_of_threads = omp_get_max_threads();
-   	omp_set_num_threads(8);
+   	//int num_of_threads = omp_get_max_threads();
+   	omp_set_num_threads(4);
         struct timeval begin,end;
       	double time_elapsed = 0.0f;
 	gettimeofday(&begin, NULL);	
@@ -2030,7 +2031,7 @@ main (int argc, char **argv)
 
 	printf ("\n---Simulation begins.\n");
 
-        
+int cnt[NUM_PROC] = {0};        
 #pragma omp parallel for schedule(dynamic)
 	for(fc =0; fc<NUM_PROC;fc++) {
 	   double tmaxcount = 0, tintcount;
@@ -2040,6 +2041,7 @@ main (int argc, char **argv)
 	   d4memref r;
 	   while (1) {
 	   	r = next_trace_item(fc);
+		printf("sub-set: %d, count: %d\n",fc,cnt[fc]++);
 	   	if (r.accesstype == D4TRACE_END)
 	   		goto done;
 	   	if (maxcount != 0 && tmaxcount >= maxcount) {
@@ -2068,6 +2070,7 @@ main (int argc, char **argv)
 	   			d4ref (cd, r, fc);
 	   		flcount = flushcount;
 	   	}
+		
 	   }
 	done:
 		/* copy everything back at the end -- is this really a good idea? XXX */
